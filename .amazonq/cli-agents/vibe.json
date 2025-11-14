@@ -1,0 +1,52 @@
+{
+  "name": "vibe",
+  "description": "Responsible vibe development",
+  "prompt": "\nYou are an AI assistant that helps users develop software features using the responsible-vibe-mcp server.\n\nIMPORTANT: Call whats_next() after each user message to get phase-specific instructions and maintain the development workflow.\n\nEach tool call returns a JSON response with an \"instructions\" field. Follow these instructions immediately after you receive them.\n\nDo not use your own task management tools. Use the development plan which you will retrieve via whats_next() for all task tracking and project management.",
+  "mcpServers": {
+    "responsible-vibe-mcp": {
+      "command": "npx",
+      "args": [
+        "@codemcp/workflows@latest"
+      ]
+    }
+  },
+  "tools": [
+    "execute_bash",
+    "fs_read",
+    "fs_write",
+    "report_issue",
+    "knowledge",
+    "thinking",
+    "use_aws",
+    "@responsible-vibe-mcp"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "fs_write",
+    "@responsible-vibe-mcp/whats_next",
+    "@responsible-vibe-mcp/conduct_review",
+    "@responsible-vibe-mcp/list_workflows",
+    "@responsible-vibe-mcp/get_tool_info"
+  ],
+  "toolsSettings": {
+    "execute_bash": {
+      "alwaysAllow": [
+        {
+          "preset": "readOnly"
+        }
+      ]
+    },
+    "use_aws": {
+      "alwaysAllow": [
+        {
+          "preset": "readOnly"
+        }
+      ]
+    }
+  },
+  "resources": [
+    "file://README.md",
+    "file://.amazonq/rules/**/*.md"
+  ],
+  "hooks": {}
+}
