@@ -1,0 +1,1654 @@
+{
+  "last_updated": "2025-11-15T01:56:21.868944",
+  "total_municipalities": 206,
+  "municipalities": [
+    {
+      "id": "5205",
+      "name": "Rees",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5205",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/rees/bi"
+    },
+    {
+      "id": "0529",
+      "name": "Gernsheim",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/0529",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/gernsheim/bi/"
+    },
+    {
+      "id": "0600",
+      "name": "Krz Gremien",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/0600",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/krz-gremien/bi"
+    },
+    {
+      "id": "5262",
+      "name": "Woelfersheim",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5262",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/woelfersheim/bi"
+    },
+    {
+      "id": "5232",
+      "name": "Mayen",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5232",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/mayen/bi/"
+    },
+    {
+      "id": "5374",
+      "name": "Neustadt",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5374",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/neustadt/bi"
+    },
+    {
+      "id": "5375",
+      "name": "Neustadt",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5375",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/neustadt/bi"
+    },
+    {
+      "id": "0801",
+      "name": "Dortmund",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/0801",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/dortmund/bi"
+    },
+    {
+      "id": "1546",
+      "name": "Wachtberg",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1546",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/wachtberg/bi"
+    },
+    {
+      "id": "1670",
+      "name": "Bad Duerkheim",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1670",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/bad-duerkheim/bi"
+    },
+    {
+      "id": "5336",
+      "name": "Lehrte",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5336",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/lehrte/bi"
+    },
+    {
+      "id": "5497",
+      "name": "Beckum",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5497",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/beckum/bi"
+    },
+    {
+      "id": "1648",
+      "name": "Siegburg",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1648",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/siegburg/bi/"
+    },
+    {
+      "id": "1086",
+      "name": "St.adt Ahaus",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1086",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/stadt-ahaus/bi"
+    },
+    {
+      "id": "0546",
+      "name": "VGlandstuhl",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/0546",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/vglandstuhl/bi"
+    },
+    {
+      "id": "1653",
+      "name": "Kaiserslautern Kreis",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1653",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/kaiserslautern-kreis/bi"
+    },
+    {
+      "id": "5420",
+      "name": "Westerwaldkreis",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/5420",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/westerwaldkreis/bi"
+    },
+    {
+      "id": "1682",
+      "name": "Hennigsdorf",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1682",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/hennigsdorf/bi"
+    },
+    {
+      "id": "2170",
+      "name": "Gruenheide Mark",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/2170",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/gruenheide-mark/bi"
+    },
+    {
+      "id": "2660",
+      "name": "Fuerstenwalde Spree",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/2660",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/fuerstenwalde-spree/bi"
+    },
+    {
+      "id": "1351",
+      "name": "Badhonnef",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/1351",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/badhonnef/bi"
+    },
+    {
+      "id": "3512",
+      "name": "Maifeld",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/3512",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/maifeld/bi"
+    },
+    {
+      "id": "2740",
+      "name": "Maifeld",
+      "oparl_url": "https://sessionnet-oparl.owl-it.de/oparl/bodies/2740",
+      "oparl_endpoint": "https://sessionnet-oparl.owl-it.de/oparl",
+      "data_source": "oparl",
+      "website": "https://sessionnet.owl-it.de/maifeld/bi"
+    },
+    {
+      "id": "5a73013af24bb7ed5127a72a",
+      "name": "Landkreis Ludwigslust-Parchim",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a73013af24bb7ed5127a72a",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5c07eb7b2c66dc3b523ef15c",
+      "name": "Leipzig",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5c07eb7b2c66dc3b523ef15c",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5b92c3741d8f32e918458564",
+      "name": "Aachen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5b92c3741d8f32e918458564",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "54eaf4911ae6a017fc442c3a",
+      "name": "Wuppertal",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/54eaf4911ae6a017fc442c3a",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "549ad6a31ae6a038f9b5e1a2",
+      "name": "Moers",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/549ad6a31ae6a038f9b5e1a2",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "549ad6b51ae6a038f9b5e1a3",
+      "name": "Köln",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/549ad6b51ae6a038f9b5e1a3",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "566344c81ae6a0740409c26e",
+      "name": "Kreis Unna",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/566344c81ae6a0740409c26e",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "566348611ae6a0740409c26f",
+      "name": "Unna",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/566348611ae6a0740409c26f",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "566349fe1ae6a0740409c270",
+      "name": "Kamen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/566349fe1ae6a0740409c270",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "549ad6881ae6a038f9b5e1a1",
+      "name": "Bochum",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/549ad6881ae6a038f9b5e1a1",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614d96f1ae6a01178c354a1",
+      "name": "Berlin Reinickendorf",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614d96f1ae6a01178c354a1",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614d9a71ae6a01178c354a2",
+      "name": "Berlin Treptow Köpenick",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614d9a71ae6a01178c354a2",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614da3f1ae6a01178c354a3",
+      "name": "Berlin Steglitz Zehlendorf",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614da3f1ae6a01178c354a3",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614dac21ae6a01178c354a4",
+      "name": "Berlin Tempelhof-Schöneberg",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614dac21ae6a01178c354a4",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614dc981ae6a01178c354a7",
+      "name": "Berlin Marzahn-Hellersdorf",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614dc981ae6a01178c354a7",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614dd471ae6a01178c354a9",
+      "name": "Berlin Spandau",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614dd471ae6a01178c354a9",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614d7591ae6a01178c354a0",
+      "name": "Berlin Lichtenberg",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614d7591ae6a01178c354a0",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614daf51ae6a01178c354a5",
+      "name": "Berlin Pankow",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614daf51ae6a01178c354a5",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614db111ae6a01178c354a6",
+      "name": "Berlin Neukölln",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614db111ae6a01178c354a6",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614dcb81ae6a01178c354a8",
+      "name": "Berlin Mitte",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614dcb81ae6a01178c354a8",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614dd6e1ae6a01178c354aa",
+      "name": "Berlin Charlottenburg-Wilmersdorf",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614dd6e1ae6a01178c354aa",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614ddcd1ae6a01178c354ab",
+      "name": "Berlin Friedrichshain-Kreuzberg",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614ddcd1ae6a01178c354ab",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5614e69d1ae6a03e7a661225",
+      "name": "Ulm",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5614e69d1ae6a03e7a661225",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a6ca2c6835b944a49fc7861",
+      "name": "Erkelenz",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a6ca2c6835b944a49fc7861",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f744875ce977aca948",
+      "name": "Hürtgenwald",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f744875ce977aca948",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f744875ce977aca949",
+      "name": "Wesseling",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f744875ce977aca949",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f744875ce977aca94b",
+      "name": "Erftstadt",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f744875ce977aca94b",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f844875ce977acb30d",
+      "name": "Leopoldshöhe",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f844875ce977acb30d",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f844875ce977acb348",
+      "name": "Kreis Euskirchen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f844875ce977acb348",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4243f944875ce977acc0b5",
+      "name": "Kall",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4243f944875ce977acc0b5",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a42458944875ce977b6b484",
+      "name": "Bedburg",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a42458944875ce977b6b484",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4248c844875ce977c1ef4d",
+      "name": "Merzenich",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4248c844875ce977c1ef4d",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a424a7e44875ce977c68967",
+      "name": "Kreuzau",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a424a7e44875ce977c68967",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a424c3a44875ce977cb0243",
+      "name": "Vettweiß",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a424c3a44875ce977cb0243",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4251d944875ce977d70a8e",
+      "name": "Jülich",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4251d944875ce977d70a8e",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4254da44875ce977dd55df",
+      "name": "Linnich",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4254da44875ce977dd55df",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a425d0e44875ce977ea93fb",
+      "name": "Bad Münstereifel",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a425d0e44875ce977ea93fb",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a42697444875ce977facd2f",
+      "name": "Titz",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a42697444875ce977facd2f",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a426fd244875ce9770255fd",
+      "name": "Nettersheim",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a426fd244875ce9770255fd",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a4272f344875ce97705cd0b",
+      "name": "Nörvenich",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a4272f344875ce97705cd0b",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a42744c44875ce977075062",
+      "name": "Langerwehe",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a42744c44875ce977075062",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a427aa244875ce9770dfc0c",
+      "name": "Kerpen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a427aa244875ce9770dfc0c",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a427bc544875ce9770f760e",
+      "name": "Brühl",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a427bc544875ce9770f760e",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a427f6144875ce97713a6ea",
+      "name": "Pulheim",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a427f6144875ce97713a6ea",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a428b9244875ce977202587",
+      "name": "Aldenhoven",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a428b9244875ce977202587",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a429a6a44875ce9772d62df",
+      "name": "Inden",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a429a6a44875ce9772d62df",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a70bbe0835b944a49c61b66",
+      "name": "Willich",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a70bbe0835b944a49c61b66",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": "https://www.stadt-willich.de"
+    },
+    {
+      "id": "5a740d6af24bb7ed5173ec8f",
+      "name": "Stemwede",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a740d6af24bb7ed5173ec8f",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5a959fb3d43196d9029e03fc",
+      "name": "Weilerswist",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5a959fb3d43196d9029e03fc",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5aa2f906d43196d9028a9a02",
+      "name": "Steinhagen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5aa2f906d43196d9028a9a02",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": "www.steinhagen.de"
+    },
+    {
+      "id": "5b92c3741d8f32e918458513",
+      "name": "Unknown",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5b92c3741d8f32e918458513",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5b93e06c1d8f32e918743b14",
+      "name": "Kreis Viersen",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5b93e06c1d8f32e918743b14",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": "https://kis.kreis-viersen.de"
+    },
+    {
+      "id": "5c065d9e2c66dc3b52d39926",
+      "name": "Schwalmtal",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5c065d9e2c66dc3b52d39926",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": "http://www.schwalmtal.de"
+    },
+    {
+      "id": "5c065d9e2c66dc3b52d3995c",
+      "name": "Unknown",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5c065d9e2c66dc3b52d3995c",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "5c476a1b2c66dc3b52c4c9cf",
+      "name": "Krefeld",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5c476a1b2c66dc3b52c4c9cf",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": "https://www.krefeld.de"
+    },
+    {
+      "id": "5c48170b2c66dc3b52c89470",
+      "name": "Unknown",
+      "oparl_url": "https://oparl.politik-bei-uns.de/body/5c48170b2c66dc3b52c89470",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "köln",
+      "name": "Stadt Köln",
+      "oparl_url": "https://buergerinfo.stadt-koeln.de/oparl/system",
+      "oparl_endpoint": "https://buergerinfo.stadt-koeln.de/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bonn",
+      "name": "Stadt Bonn",
+      "oparl_url": "https://www.bonn.sitzung-online.de/public/oparl/system",
+      "oparl_endpoint": "https://www.bonn.sitzung-online.de/public/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "aachen",
+      "name": "Stadt Aachen",
+      "oparl_url": "https://ratsinfo.aachen.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://ratsinfo.aachen.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "eschwege",
+      "name": "Eschwege",
+      "oparl_url": "https://rim.ekom21.de/eschwege/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/eschwege/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "landeshauptdusseldorf",
+      "name": "Landeshauptstadt Dusseldorf",
+      "oparl_url": "https://ris-oparl.itk-rheinland.de/Oparl/system",
+      "oparl_endpoint": "https://ris-oparl.itk-rheinland.de/Oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "dresden",
+      "name": "Stadt Dresden",
+      "oparl_url": "https://oparl.dresden.de/system",
+      "oparl_endpoint": "https://oparl.dresden.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "leipzig",
+      "name": "Stadt Leipzig",
+      "oparl_url": "https://ratsinformation.leipzig.de/allris_leipzig_public/oparl/system",
+      "oparl_endpoint": "https://ratsinformation.leipzig.de/allris_leipzig_public/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "wuppertal",
+      "name": "Stadt Wuppertal",
+      "oparl_url": "https://oparl.wuppertal.de/oparl/system",
+      "oparl_endpoint": "https://oparl.wuppertal.de/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "münster",
+      "name": "Stadt Münster",
+      "oparl_url": "https://oparl.stadt-muenster.de/system",
+      "oparl_endpoint": "https://oparl.stadt-muenster.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "braunschweig",
+      "name": "Stadt Braunschweig",
+      "oparl_url": "https://ratsinfo.braunschweig.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://ratsinfo.braunschweig.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "krefeld",
+      "name": "Stadt Krefeld",
+      "oparl_url": "https://ris.krefeld.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ris.krefeld.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "freiburg",
+      "name": "Stadt Freiburg",
+      "oparl_url": "https://ris.freiburg.de/oparl",
+      "oparl_endpoint": "https://ris.freiburg.de/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "hagen",
+      "name": "Stadt Hagen",
+      "oparl_url": "https://www.hagen.de/buergerinfo/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.hagen.de/buergerinfo/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "landkreis-ludwigslust-parchim",
+      "name": "Landkreis Ludwigslust-Parchim",
+      "oparl_url": "https://www.lwl-pch.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.lwl-pch.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "klingensolingen",
+      "name": "Klingenstadt Solingen",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4957/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4957/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "ulm",
+      "name": "Stadt Ulm",
+      "oparl_url": "https://buergerinfo.ulm.de/oparl/system",
+      "oparl_endpoint": "https://buergerinfo.ulm.de/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "castrop-rauxel",
+      "name": "Stadt Castrop-Rauxel",
+      "oparl_url": "https://castroprauxel.gremien.info/oparl",
+      "oparl_endpoint": "https://castroprauxel.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kolpingkerpen",
+      "name": "Kolpingstadt Kerpen",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4770/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4770/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kolpingkerpen",
+      "name": "Kolpingstadt Kerpen",
+      "oparl_url": "https://ratsinfo.stadt-kerpen.de/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://ratsinfo.stadt-kerpen.de/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "herford",
+      "name": "Stadt Herford",
+      "oparl_url": "https://herford.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://herford.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bergheim",
+      "name": "Stadt Bergheim",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4800/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4800/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bergheim",
+      "name": "Stadt Bergheim",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4800/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4800/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "pulheim",
+      "name": "Stadt Pulheim",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4350/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4350/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "willich",
+      "name": "Stadt Willich",
+      "oparl_url": "https://ris.stadt-willich.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ris.stadt-willich.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "erftstadt",
+      "name": "Stadt Erftstadt",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4490/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4490/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "landkreis-markisch-oderland",
+      "name": "Landkreis Markisch-Oderland",
+      "oparl_url": "https://ratsinfo-online.net/landkreis-mol-bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://ratsinfo-online.net/landkreis-mol-bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kreis-gütersloh",
+      "name": "Kreis Gütersloh",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4890/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4890/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "nettersheim",
+      "name": "Gemeinde Nettersheim",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4580/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4580/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kreis-viersen",
+      "name": "Kreis Viersen",
+      "oparl_url": "https://kis.kreis-viersen.de/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://kis.kreis-viersen.de/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kreisverwaltung-euskirchen",
+      "name": "Kreisverwaltung Euskirchen",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4520/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4520/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rheda-wiedenbrück",
+      "name": "Stadt Rheda-Wiedenbrück",
+      "oparl_url": "https://ratsinfo.rheda-wiedenbrueck.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.rheda-wiedenbrueck.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "gronau",
+      "name": "Stadt Gronau",
+      "oparl_url": "https://gronau.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://gronau.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "erkelenz",
+      "name": "Stadt Erkelenz",
+      "oparl_url": "https://ratsinfo.erkelenz.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://ratsinfo.erkelenz.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bruhl",
+      "name": "Stadt Bruhl",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4410/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4410/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "brühl",
+      "name": "Stadt Brühl",
+      "oparl_url": "https://ratsinfo.bruehl.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.bruehl.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "lahr/schwarzwald",
+      "name": "Stadt Lahr/Schwarzwald",
+      "oparl_url": "https://lahr.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://lahr.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bad-kreuznach",
+      "name": "Stadt Bad Kreuznach",
+      "oparl_url": "https://bad-kreuznach-stadt.gremien.info/oparl/system",
+      "oparl_endpoint": "https://bad-kreuznach-stadt.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "olpe",
+      "name": "Stadt Olpe",
+      "oparl_url": "https://sitzungsdienst.kdz-ws.net/gkz330/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sitzungsdienst.kdz-ws.net/gkz330/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "pirmasens",
+      "name": "Stadt Pirmasens",
+      "oparl_url": "https://oparl.stadt-pirmasens.de/oparl/system",
+      "oparl_endpoint": "https://oparl.stadt-pirmasens.de/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "wesseling",
+      "name": "Stadt Wesseling",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4420/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4420/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "wesseling",
+      "name": "Stadt Wesseling",
+      "oparl_url": "https://ratsinfo.wesseling.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.wesseling.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "goch",
+      "name": "Stadt Goch",
+      "oparl_url": "https://ris.goch.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ris.goch.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "jülich",
+      "name": "Stadt Jülich",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4240/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4240/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "enger",
+      "name": "Stadt Enger",
+      "oparl_url": "https://enger.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://enger.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "spenge",
+      "name": "Stadt Spenge",
+      "oparl_url": "https://spenge.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://spenge.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "vlotho",
+      "name": "Stadt Vlotho",
+      "oparl_url": "https://vlotho.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://vlotho.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "hiddenhausen",
+      "name": "Gemeinde Hiddenhausen",
+      "oparl_url": "https://hiddenhausen.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://hiddenhausen.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kirchlengern",
+      "name": "Gemeinde Kirchlengern",
+      "oparl_url": "https://kirchlengern.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://kirchlengern.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rödinghausen",
+      "name": "Gemeinde Rödinghausen",
+      "oparl_url": "https://roedinghausen.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://roedinghausen.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-marzahn-hellersdorf",
+      "name": "Berlin Marzahn-Hellersdorf",
+      "oparl_url": "https://www.sitzungsdienst-marzahn-hellersdorf.de/oi/oparl/1.1/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-marzahn-hellersdorf.de/oi/oparl/1.1.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-steglitz-zehlendorf",
+      "name": "Berlin Steglitz-Zehlendorf",
+      "oparl_url": "https://www.sitzungsdienst-steglitz-zehlendorf.de/oi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-steglitz-zehlendorf.de/oi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-treptow-köpenick",
+      "name": "Berlin Treptow-Köpenick",
+      "oparl_url": "https://www.sitzungsdienst-treptow-koepenick.de/oi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-treptow-koepenick.de/oi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-reinickendorf",
+      "name": "Berlin Reinickendorf",
+      "oparl_url": "https://www.sitzungsdienst-reinickendorf.de/oi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-reinickendorf.de/oi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-pankow",
+      "name": "Berlin Pankow",
+      "oparl_url": "https://www.sitzungsdienst-pankow.de/oi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-pankow.de/oi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "schwalmtal",
+      "name": "Gemeinde Schwalmtal",
+      "oparl_url": "https://ris.schwalmtal.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ris.schwalmtal.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "ladbergen",
+      "name": "Gemeinde Ladbergen",
+      "oparl_url": "https://ladbergen.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ladbergen.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rahden",
+      "name": "Rahden",
+      "oparl_url": "http://rahden.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "http://rahden.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "stemwede",
+      "name": "Gemeinde Stemwede",
+      "oparl_url": "https://stemwede.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://stemwede.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "aldenhoven",
+      "name": "Gemeinde Aldenhoven",
+      "oparl_url": "https://ratsinfo.aldenhoven.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.aldenhoven.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "hürtgenwald",
+      "name": "Gemeinde Hürtgenwald",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4220/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4220/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "inden",
+      "name": "Gemeinde Inden",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4230/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4230/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kreuzau",
+      "name": "Gemeinde Kreuzau",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4250/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4250/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "langerwehe",
+      "name": "Gemeinde Langerwehe",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4260/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4260/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "merzenich",
+      "name": "Gemeinde Merzenich",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4280/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4280/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "nörvenich",
+      "name": "Gemeinde Nörvenich",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4160/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4160/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "titz",
+      "name": "Gemeinde Titz",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4170/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4170/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "vettweiß",
+      "name": "Gemeinde Vettweiß",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4180/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4180/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "linnich",
+      "name": "Stadt Linnich",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4270/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4270/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "velen",
+      "name": "Velen",
+      "oparl_url": "https://velen.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://velen.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "steinhagen",
+      "name": "Gemeinde Steinhagen",
+      "oparl_url": "https://ratsinfo.steinhagen.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.steinhagen.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "langenberg",
+      "name": "Gemeinde Langenberg",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4883/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4883/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "langenberg",
+      "name": "Gemeinde Langenberg",
+      "oparl_url": "https://ratsinfo.langenberg.de/webservice/oparl/v1.0/system",
+      "oparl_endpoint": "https://ratsinfo.langenberg.de/webservice/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "weilerswist",
+      "name": "Gemeinde Weilerswist",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4510/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4510/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kall",
+      "name": "Gemeinde Kall",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4550/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4550/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bad-munstereifel",
+      "name": "Stadt Bad Munstereifel",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4500/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4500/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bad-münstereifel",
+      "name": "Stadt Bad Münstereifel",
+      "oparl_url": "https://ratsinfo.bad-muenstereifel.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ratsinfo.bad-muenstereifel.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "leopoldshohe",
+      "name": "Leopoldshohe",
+      "oparl_url": "https://leopoldshoehe.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://leopoldshoehe.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "wachtendonk",
+      "name": "Gemeinde Wachtendonk",
+      "oparl_url": "https://ris.wachtendonk.de/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://ris.wachtendonk.de/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rees",
+      "name": "Stadt Rees",
+      "oparl_url": "https://sessionnet-oparl.krz.de/oparl/bodies/5205",
+      "oparl_endpoint": "https://sessionnet-oparl.krz.de/oparl/bodies/5205",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bedburg",
+      "name": "Stadt Bedburg",
+      "oparl_url": "https://sdnetrim.kdvz-frechen.de/rim4780/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://sdnetrim.kdvz-frechen.de/rim4780/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "aarbergen",
+      "name": "Aarbergen",
+      "oparl_url": "https://rim.ekom21.de/aarbergen/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/aarbergen/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "westerburg",
+      "name": "Westerburg",
+      "oparl_url": "https://westerburg.gremien.info/oparl/system",
+      "oparl_endpoint": "https://westerburg.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "glasau",
+      "name": "Gemeinde Glasau",
+      "oparl_url": "https://www.trave.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.trave.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "schiffdorf",
+      "name": "Gemeinde Schiffdorf",
+      "oparl_url": "https://schiffdorf.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://schiffdorf.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "willingen",
+      "name": "Willingen",
+      "oparl_url": "https://rim.ekom21.de/willingen/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/willingen/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "verbandshagenbach",
+      "name": "Verbandsgemeinde Hagenbach",
+      "oparl_url": "https://www.hagenbach.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.hagenbach.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "boppard",
+      "name": "Stadt Boppard",
+      "oparl_url": "http://www.boppard.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.boppard.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "harsum",
+      "name": "Gemeinde Harsum",
+      "oparl_url": "http://www.harsum.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.harsum.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "harsum",
+      "name": "Gemeinde Harsum",
+      "oparl_url": "https://www.harsum.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.harsum.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "großalmerode",
+      "name": "Großalmerode",
+      "oparl_url": "https://rim.ekom21.de/grossalmerode/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/grossalmerode/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "vg-hagenbach",
+      "name": "VG Hagenbach",
+      "oparl_url": "http://www.hagenbach.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.hagenbach.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "amt-itzstedt",
+      "name": "Amt Itzstedt",
+      "oparl_url": "https://www.itzstedt.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.itzstedt.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "verbandsweida-land",
+      "name": "Verbandsgemeinde Weida-Land",
+      "oparl_url": "https://weida-land.gremien.info/oparl/system",
+      "oparl_endpoint": "https://weida-land.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bad-pyrmont",
+      "name": "Stadt Bad Pyrmont",
+      "oparl_url": "https://badpyrmont.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://badpyrmont.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "hessisch-lichtenau",
+      "name": "Hessisch Lichtenau",
+      "oparl_url": "https://rim.ekom21.de/hessisch-lichtenau/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/hessisch-lichtenau/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kreishomberg-(efze)",
+      "name": "Kreisstadt Homberg (Efze)",
+      "oparl_url": "https://rim.ekom21.de/homberg-efze/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/homberg-efze/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "parchim",
+      "name": "Stadt Parchim",
+      "oparl_url": "http://www.parchim.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.parchim.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "uplengen",
+      "name": "Uplengen",
+      "oparl_url": "https://uplengen.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://uplengen.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "cölbe",
+      "name": "Cölbe",
+      "oparl_url": "https://rim.ekom21.de/coelbe/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/coelbe/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "lohfelden",
+      "name": "Gemeinde Lohfelden",
+      "oparl_url": "https://lohfelden.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://lohfelden.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "herxheim",
+      "name": "Herxheim",
+      "oparl_url": "https://herxheim.gremien.info/oparl/system",
+      "oparl_endpoint": "https://herxheim.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "bleckede",
+      "name": "Stadt Bleckede",
+      "oparl_url": "http://www.bleckede.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.bleckede.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "waldbrunn-im-westerwald",
+      "name": "Gemeinde Waldbrunn im Westerwald",
+      "oparl_url": "https://rim.ekom21.de/waldbrunn/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/waldbrunn/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "kronberg-im-taunus",
+      "name": "Kronberg im Taunus",
+      "oparl_url": "https://kronberg.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://kronberg.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rosbach-v.-d.-höhe",
+      "name": "Rosbach v. d. Höhe",
+      "oparl_url": "https://www.rosbach.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.rosbach.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "rosbach",
+      "name": "Stadt Rosbach",
+      "oparl_url": "http://www.rosbach.sitzung-online.de/bi/oparl/1.0/system.asp",
+      "oparl_endpoint": "http://www.rosbach.sitzung-online.de/bi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "schmitten",
+      "name": "Schmitten",
+      "oparl_url": "https://rim.ekom21.de/schmitten/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/schmitten/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "ortenberg",
+      "name": "Ortenberg",
+      "oparl_url": "https://rim.ekom21.de/ortenberg/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/ortenberg/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "homberg-(ohm)",
+      "name": "Homberg (Ohm)",
+      "oparl_url": "https://rim.ekom21.de/homberg-ohm/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/homberg-ohm/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "schwarzenborn",
+      "name": "Schwarzenborn",
+      "oparl_url": "https://rim.ekom21.de/schwarzenborn/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/schwarzenborn/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "fernwald",
+      "name": "Fernwald",
+      "oparl_url": "https://rim.ekom21.de/fernwald/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/fernwald/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "wallenhorst",
+      "name": "Gemeinde Wallenhorst",
+      "oparl_url": "https://wallenhorst.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://wallenhorst.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "guxhagen",
+      "name": "Guxhagen",
+      "oparl_url": "https://rim.ekom21.de/guxhagen/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/guxhagen/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "ehringshausen",
+      "name": "Ehringshausen",
+      "oparl_url": "https://rim.ekom21.de/ehringshausen/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/ehringshausen/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "samtsögel",
+      "name": "Samtgemeinde Sögel",
+      "oparl_url": "http://soegel.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "http://soegel.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "glashütten",
+      "name": "Gemeinde Glashütten",
+      "oparl_url": "https://rim.ekom21.de/glashuetten/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://rim.ekom21.de/glashuetten/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "emmelshausen",
+      "name": "Emmelshausen",
+      "oparl_url": "https://emmelshausen.gremien.info/oparl/system",
+      "oparl_endpoint": "https://emmelshausen.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "montabaur",
+      "name": "Montabaur",
+      "oparl_url": "https://montabaur.gremien.info/oparl/system",
+      "oparl_endpoint": "https://montabaur.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "edenkoben",
+      "name": "Edenkoben",
+      "oparl_url": "https://edenkoben.gremien.info/oparl/system",
+      "oparl_endpoint": "https://edenkoben.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "enkenbach-alsenborn",
+      "name": "Enkenbach-Alsenborn",
+      "oparl_url": "https://enkenbach-alsenborn.gremien.info/oparl/system",
+      "oparl_endpoint": "https://enkenbach-alsenborn.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "salzatal",
+      "name": "Salzatal",
+      "oparl_url": "https://salzatal.gremien.info/oparl/system",
+      "oparl_endpoint": "https://salzatal.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "berlin-lichtenberg",
+      "name": "Berlin Lichtenberg",
+      "oparl_url": "https://www.sitzungsdienst-lichtenberg.de/oi/oparl/1.0/system.asp",
+      "oparl_endpoint": "https://www.sitzungsdienst-lichtenberg.de/oi/oparl/1.0.asp",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "emsdetten",
+      "name": "Stadt Emsdetten",
+      "oparl_url": "https://emsdetten.ratsinfomanagement.net/webservice/oparl/v1.1/system",
+      "oparl_endpoint": "https://emsdetten.ratsinfomanagement.net/webservice/oparl/v1.1",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "münchen-transparent",
+      "name": "München Transparent",
+      "oparl_url": "https://www.muenchen-transparent.de/oparl/v1.0",
+      "oparl_endpoint": "https://www.muenchen-transparent.de/oparl/v1.0",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "oparl-mirror",
+      "name": "OParl Mirror",
+      "oparl_url": "https://mirror.oparl.org/system",
+      "oparl_endpoint": "https://mirror.oparl.org",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "politik-bei-uns---aufbereitete-daten",
+      "name": "Politik bei Uns - Aufbereitete Daten",
+      "oparl_url": "https://oparl.politik-bei-uns.de/system",
+      "oparl_endpoint": "https://oparl.politik-bei-uns.de",
+      "data_source": "oparl",
+      "website": ""
+    },
+    {
+      "id": "regionalverband-ruhr",
+      "name": "Regionalverband Ruhr",
+      "oparl_url": "https://rvr-online.gremien.info/oparl",
+      "oparl_endpoint": "https://rvr-online.gremien.info/oparl",
+      "data_source": "oparl",
+      "website": ""
+    }
+  ]
+}

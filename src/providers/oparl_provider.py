@@ -2,7 +2,7 @@
 
 import aiohttp
 import json
-import re
+import os
 from typing import List, Optional
 from datetime import datetime
 from .base_provider import BaseProvider
@@ -10,38 +10,11 @@ from ..schemas import Municipality, Meeting, AgendaItem, File
 
 
 class OParlProvider(BaseProvider):
-    """Provider für OParl API Zugriff"""
+    """Provider für OParl API Zugriff mit statischen Municipality-Daten"""
     
-    def __init__(self, base_url: str = "https://sessionnet-oparl.owl-it.de/oparl"):
-        self.base_url = base_url
+    def __init__(self):
         self.session = None
-    
-    def _infer_city_name(self, website_url: str) -> str:
-        """Stadtname aus Website-URL extrahieren"""
-        if not website_url:
-            return "Unbekannt"
-        
-        # Extrahiere Stadtname aus URL wie "https://sessionnet.owl-it.de/rees/bi"
-        match = re.search(r'/([^/]+)/bi/?$', website_url)
-        if match:
-            city_slug = match.group(1)
-            # Konvertiere URL-Slug zu lesbarem Namen
-            city_name = city_slug.replace('-', ' ').title()
-            
-            # Spezielle Fälle korrigieren
-            replacements = {
-                'Stadt Ahaus': 'Ahaus',
-                'Vglandstuhl': 'VG Landstuhl',
-                'Kaiserslautern Kreis': 'Landkreis Kaiserslautern',
-                'Gruenheide Mark': 'Grünheide (Mark)',
-                'Fuerstenwalde Spree': 'Fürstenwalde/Spree',
-                'Bad Duerkheim': 'Bad Dürkheim',
-                'Woelfersheim': 'Wölfersheim'
-            }
-            
-            return replacements.get(city_name, city_name)
-        
-        return "Unbekannt"
+        self._municipalities_cache = None
     
     async def _get_session(self):
         """HTTP Session erstellen"""
@@ -66,43 +39,51 @@ class OParlProvider(BaseProvider):
             print(f"Request error for {url}: {e}")
             return None
     
+    def _load_municipalities_from_file(self) -> List[Municipality]:
+        """Municipalities aus statischer JSON-Datei laden"""
+        if self._municipalities_cache:
+            return self._municipalities_cache
+        
+        # Pfad zur municipalities.json Datei
+        current_dir = os.path.dirname(__file__)
+        data_file = os.path.join(current_dir, "..", "data", "municipalities.json")
+        
+        try:
+            with open(data_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            municipalities = []
+            for muni_data in data["municipalities"]:
+                municipality = Municipality(
+                    id=muni_data["id"],
+                    name=muni_data["name"],
+                    oparl_url=muni_data["oparl_url"],
+                    oparl_endpoint=muni_data["oparl_endpoint"],
+                    data_source=muni_data["data_source"],
+                    meeting_list_url=muni_data["oparl_url"] + "/meetings",
+                    last_updated=data["last_updated"],
+                    website=muni_data.get("website")
+                )
+                municipalities.append(municipality)
+            
+            self._municipalities_cache = municipalities
+            return municipalities
+            
+        except Exception as e:
+            print(f"Error loading municipalities file: {e}")
+            return []
+    
     async def get_municipalities(self) -> List[Municipality]:
-        """OParl Bodies als Municipalities laden"""
-        system_url = f"{self.base_url}/system"
-        system_data = await self._make_request(system_url)
-        
-        if not system_data:
-            return []
-        
-        bodies_url = system_data.get("body")
-        if not bodies_url:
-            return []
-        
-        bodies_data = await self._make_request(bodies_url)
-        if not bodies_data or "data" not in bodies_data:
-            return []
-        
-        municipalities = []
-        for body in bodies_data["data"]:
-            website = body.get("website", "")
-            city_name = self._infer_city_name(website)
-            
-            # Extrahiere nur die ID aus der OParl URL
-            oparl_id = body["id"]
-            municipality_id = oparl_id.split("/")[-1] if "/" in oparl_id else oparl_id
-            
-            municipality = Municipality(
-                id=municipality_id,  # Nur die ID, nicht die volle URL
-                name=city_name,
-                oparl_url=oparl_id,  # Vollständige OParl URL für API calls
-                oparl_endpoint=self.base_url,
-                meeting_list_url=body.get("meeting", ""),
-                last_updated=datetime.now().isoformat(),
-                website=website
-            )
-            municipalities.append(municipality)
-        
-        return municipalities
+        """Municipalities aus statischer Datei laden (schnell!)"""
+        return self._load_municipalities_from_file()
+    
+    def _get_endpoint_for_municipality(self, municipality_id: str) -> Optional[str]:
+        """OParl Endpoint für Municipality ID finden"""
+        municipalities = self._load_municipalities_from_file()
+        for muni in municipalities:
+            if muni.id == municipality_id:
+                return muni.oparl_endpoint
+        return None
     
     async def get_meetings(
         self, 
@@ -111,8 +92,11 @@ class OParlProvider(BaseProvider):
         end_date: Optional[str] = None
     ) -> List[Meeting]:
         """Meetings für Municipality laden"""
-        # Vereinfachte Implementierung - lädt erste Seite
-        meetings_url = f"{self.base_url}/bodies/{municipality_id}/meetings"
+        endpoint = self._get_endpoint_for_municipality(municipality_id)
+        if not endpoint:
+            return []
+        
+        meetings_url = f"{endpoint}/bodies/{municipality_id}/meetings"
         
         # Filter hinzufügen wenn vorhanden
         params = []
@@ -135,8 +119,8 @@ class OParlProvider(BaseProvider):
             meeting_id = oparl_url.split("/")[-1] if "/" in oparl_url else oparl_url
             
             meeting = Meeting(
-                id=meeting_id,  # Nur die Meeting ID
-                oparl_url=oparl_url,  # Vollständige OParl URL
+                id=meeting_id,
+                oparl_url=oparl_url,
                 name=meeting_data.get("name", ""),
                 meetingState=meeting_data.get("meetingState"),
                 cancelled=meeting_data.get("cancelled", False),
@@ -191,8 +175,8 @@ class OParlProvider(BaseProvider):
             return None
         
         meeting = Meeting(
-            id=meeting_data["id"].split("/")[-1] if "/" in meeting_data["id"] else meeting_data["id"],  # Nur Meeting ID
-            oparl_url=meeting_data["id"],  # Vollständige OParl URL
+            id=meeting_data["id"].split("/")[-1] if "/" in meeting_data["id"] else meeting_data["id"],
+            oparl_url=meeting_data["id"],
             name=meeting_data.get("name", ""),
             meetingState=meeting_data.get("meetingState"),
             cancelled=meeting_data.get("cancelled", False),
