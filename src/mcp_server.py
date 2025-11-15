@@ -43,7 +43,7 @@ async def handle_call_tool(name: str, arguments: dict):
     
     elif name == "get_meetings":
         return await get_meetings(
-            municipality_id=arguments["municipality_id"],
+            municipality_oparl_url=arguments["municipality_oparl_url"],
             start_date=arguments.get("start_date"),
             end_date=arguments.get("end_date")
         )

@@ -77,26 +77,14 @@ class OParlProvider(BaseProvider):
         """Municipalities aus statischer Datei laden (schnell!)"""
         return self._load_municipalities_from_file()
     
-    def _get_endpoint_for_municipality(self, municipality_id: str) -> Optional[str]:
-        """OParl Endpoint für Municipality ID finden"""
-        municipalities = self._load_municipalities_from_file()
-        for muni in municipalities:
-            if muni.id == municipality_id:
-                return muni.oparl_endpoint
-        return None
-    
     async def get_meetings(
         self, 
-        municipality_id: str, 
+        municipality_oparl_url: str, 
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> List[Meeting]:
         """Meetings für Municipality laden"""
-        endpoint = self._get_endpoint_for_municipality(municipality_id)
-        if not endpoint:
-            return []
-        
-        meetings_url = f"{endpoint}/bodies/{municipality_id}/meetings"
+        meetings_url = f"{municipality_oparl_url}/meetings"
         
         # Filter hinzufügen wenn vorhanden
         params = []

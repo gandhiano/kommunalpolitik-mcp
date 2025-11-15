@@ -8,7 +8,7 @@ from typing import Optional
 
 
 async def get_meetings(
-    municipality_id: str,
+    municipality_oparl_url: str,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ) -> list[TextContent]:
@@ -16,10 +16,10 @@ async def get_meetings(
     provider = OParlProvider()
     
     try:
-        meetings = await provider.get_meetings(municipality_id, start_date, end_date)
+        meetings = await provider.get_meetings(municipality_oparl_url, start_date, end_date)
         
         result = {
-            "municipality_id": municipality_id,
+            "municipality_oparl_url": municipality_oparl_url,
             "meetings": [
                 {
                     "id": m.id,
@@ -133,9 +133,9 @@ get_meetings_tool = Tool(
     inputSchema={
         "type": "object",
         "properties": {
-            "municipality_id": {
+            "municipality_oparl_url": {
                 "type": "string",
-                "description": "ID der Kommune (aus list_municipalities)"
+                "description": "OParl URL der Kommune (aus list_municipalities)"
             },
             "start_date": {
                 "type": "string",
@@ -146,7 +146,7 @@ get_meetings_tool = Tool(
                 "description": "Enddatum (ISO format, optional)"
             }
         },
-        "required": ["municipality_id"]
+        "required": ["municipality_oparl_url"]
     }
 )
 

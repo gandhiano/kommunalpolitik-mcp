@@ -16,7 +16,7 @@ class BaseProvider(ABC):
     @abstractmethod
     async def get_meetings(
         self, 
-        municipality_id: str, 
+        municipality_oparl_url: str, 
         start_date: Optional[str] = None,
         end_date: Optional[str] = None
     ) -> List[Meeting]:
