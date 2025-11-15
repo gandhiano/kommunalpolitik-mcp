@@ -204,7 +204,8 @@ requests>=2.28.0
 - [x] OParl Provider Integration
 - [x] Basis-Tools implementieren (municipalities, meetings, protocols)
 - [x] JSON-Schemas implementieren
-- [ ] Error-Handling und Logging
+- [x] Error-Handling und Logging
+- [x] Q CLI Integration und Agent-Konfiguration
 - [ ] Integration Tests mit bestehenden Daten
 - [ ] Erweiterte Tools implementieren (agenda, documents, voting)
 - [ ] Dokumentation und README
@@ -218,6 +219,8 @@ requests>=2.28.0
 - [x] MVP MCP Tools implementiert (list_municipalities, get_meetings, get_meeting_details, get_protocol_text)
 - [x] MCP Server Hauptdatei mit Tool-Routing
 - [x] Test-Script für Provider-Validierung
+- [x] Q CLI Agent-Konfiguration und Integration
+- [x] MCP Server Protocol-Kompatibilität mit Q CLI
 
 ## Finalisieren
 

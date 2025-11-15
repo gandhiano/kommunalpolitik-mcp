@@ -7,9 +7,10 @@ Stellt strukturierte Daten für Client-LLMs bereit.
 """
 
 import asyncio
+import logging
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp import Tool
+from mcp.types import Tool
 
 from .tools.municipalities import list_municipalities, list_municipalities_tool
 from .tools.meetings import (
@@ -18,6 +19,9 @@ from .tools.meetings import (
     get_protocol_text, get_protocol_text_tool
 )
 
+# Logging konfigurieren - nur für Debugging, nicht in Produktion
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 # MCP Server erstellen
 server = Server("kommunalpolitik-mcp")
@@ -38,38 +42,43 @@ async def handle_list_tools() -> list[Tool]:
 async def handle_call_tool(name: str, arguments: dict):
     """MCP Tool aufrufen"""
     
-    if name == "list_municipalities":
-        return await list_municipalities()
+    try:
+        if name == "list_municipalities":
+            return await list_municipalities()
+        
+        elif name == "get_meetings":
+            return await get_meetings(
+                municipality_oparl_url=arguments["municipality_oparl_url"],
+                start_date=arguments.get("start_date"),
+                end_date=arguments.get("end_date"),
+                page=arguments.get("page"),
+                limit=arguments.get("limit")
+            )
+        
+        elif name == "get_meeting_details":
+            return await get_meeting_details(
+                meeting_oparl_url=arguments["meeting_oparl_url"]
+            )
+        
+        elif name == "get_protocol_text":
+            return await get_protocol_text(
+                meeting_oparl_url=arguments["meeting_oparl_url"]
+            )
+        
+        else:
+            raise ValueError(f"Unbekanntes Tool: {name}")
     
-    elif name == "get_meetings":
-        return await get_meetings(
-            municipality_oparl_url=arguments["municipality_oparl_url"],
-            start_date=arguments.get("start_date"),
-            end_date=arguments.get("end_date"),
-            page=arguments.get("page"),
-            limit=arguments.get("limit")
-        )
-    
-    elif name == "get_meeting_details":
-        return await get_meeting_details(
-            meeting_oparl_url=arguments["meeting_oparl_url"]
-        )
-    
-    elif name == "get_protocol_text":
-        return await get_protocol_text(
-            meeting_oparl_url=arguments["meeting_oparl_url"]
-        )
-    
-    else:
-        raise ValueError(f"Unbekanntes Tool: {name}")
+    except Exception as e:
+        raise
 
 
 async def main():
     """MCP Server starten"""
+    
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
-            read_stream,
-            write_stream,
+            read_stream, 
+            write_stream, 
             server.create_initialization_options()
         )
 

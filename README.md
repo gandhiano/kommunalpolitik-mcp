@@ -64,6 +64,26 @@ kommunalpolitik-mcp/
 - `get_decisions_requiring_action()` - Umsetzungsaufgaben
 - `get_meeting_outcomes()` - Beschlüsse für Planung
 
+## 🚀 Usage
+
+### With Amazon Q
+
+1. **Activate virtual environment:**
+   ```bash
+   source venv/bin/activate
+   ```
+
+2. **Start Q with kommunalpolitik agent:**
+   ```bash
+   q chat --agent kommunalpolitik
+   ```
+
+3. **Test the MCP tools:**
+   ```
+   List available German municipalities
+   Show me recent meetings from Dortmund
+   ```
+
 ## 🚀 Entwicklungsansatz
 
 **Iterative Entwicklung:**

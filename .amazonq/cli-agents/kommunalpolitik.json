@@ -1,0 +1,23 @@
+{
+  "name": "kommunalpolitik",
+  "description": "German municipal politics data access via OParl API. Provides structured access to meetings, protocols, and political data from German municipalities.",
+  "prompt": "You are an AI assistant with access to German municipal politics data through the kommunalpolitik MCP server. You can help users explore meetings, protocols, and political data from German municipalities using OParl-compliant APIs.",
+  "mcpServers": {
+    "kommunalpolitik": {
+      "command": "/Users/gualterbaptista/git/politik/kommunalpolitik-mcp/.venv/bin/python",
+      "args": [
+        "-m", "src.mcp_server"
+      ],
+      "cwd": "/Users/gualterbaptista/git/politik/kommunalpolitik-mcp"
+    }
+  },
+  "tools": [
+    "@kommunalpolitik"
+  ],
+  "allowedTools": [
+    "@kommunalpolitik/list_municipalities",
+    "@kommunalpolitik/get_meetings", 
+    "@kommunalpolitik/get_meeting_details",
+    "@kommunalpolitik/get_protocol_text"
+  ]
+}
