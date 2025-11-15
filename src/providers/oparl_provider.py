@@ -77,16 +77,18 @@ class OParlProvider(BaseProvider):
         """Municipalities aus statischer Datei laden (schnell!)"""
         return self._load_municipalities_from_file()
     
-    async def get_meetings(
+    async def get_meetings_paginated(
         self, 
         municipality_oparl_url: str, 
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
-    ) -> List[Meeting]:
-        """Meetings für Municipality laden"""
+        end_date: Optional[str] = None,
+        page: Optional[int] = None,
+        limit: Optional[int] = None
+    ) -> dict:
+        """Meetings mit Paginierung laden"""
         meetings_url = f"{municipality_oparl_url}/meetings"
         
-        # Filter hinzufügen wenn vorhanden
+        # Filter hinzufügen
         params = []
         if start_date:
             params.append(f"modified_since={start_date}")
@@ -96,32 +98,73 @@ class OParlProvider(BaseProvider):
         if params:
             meetings_url += "?" + "&".join(params)
         
-        meetings_data = await self._make_request(meetings_url)
-        if not meetings_data or "data" not in meetings_data:
-            return []
+        all_meetings = []
+        pagination_info = {}
+        current_url = meetings_url
+        pages_fetched = 0
         
-        meetings = []
-        for meeting_data in meetings_data["data"]:
-            # Extrahiere Meeting ID aus OParl URL
-            oparl_url = meeting_data["id"]
-            meeting_id = oparl_url.split("/")[-1] if "/" in oparl_url else oparl_url
+        while current_url and (limit is None or len(all_meetings) < limit):
+            # Wenn spezifische Seite gewünscht, nur diese laden
+            if page is not None and pages_fetched != page - 1:
+                pages_fetched += 1
+                continue
             
-            meeting = Meeting(
-                id=meeting_id,
-                oparl_url=oparl_url,
-                name=meeting_data.get("name", ""),
-                meetingState=meeting_data.get("meetingState"),
-                cancelled=meeting_data.get("cancelled", False),
-                start=meeting_data.get("start", ""),
-                end=meeting_data.get("end"),
-                organization=meeting_data.get("organization", []),
-                created=meeting_data.get("created", ""),
-                modified=meeting_data.get("modified", ""),
-                web=meeting_data.get("web")
-            )
-            meetings.append(meeting)
+            meetings_data = await self._make_request(current_url)
+            if not meetings_data or "data" not in meetings_data:
+                break
+            
+            # Pagination Info speichern
+            if "pagination" in meetings_data:
+                pagination_info = meetings_data["pagination"]
+            
+            # Meetings verarbeiten
+            for meeting_data in meetings_data["data"]:
+                if limit and len(all_meetings) >= limit:
+                    break
+                    
+                oparl_url = meeting_data["id"]
+                meeting_id = oparl_url.split("/")[-1] if "/" in oparl_url else oparl_url
+                
+                meeting = Meeting(
+                    id=meeting_id,
+                    oparl_url=oparl_url,
+                    name=meeting_data.get("name", ""),
+                    meetingState=meeting_data.get("meetingState"),
+                    cancelled=meeting_data.get("cancelled", False),
+                    start=meeting_data.get("start", ""),
+                    end=meeting_data.get("end"),
+                    organization=meeting_data.get("organization", []),
+                    created=meeting_data.get("created", ""),
+                    modified=meeting_data.get("modified", ""),
+                    web=meeting_data.get("web")
+                )
+                all_meetings.append(meeting)
+            
+            # Nächste Seite
+            if page is not None:
+                break  # Nur eine Seite laden
+            
+            current_url = meetings_data.get("links", {}).get("next")
+            pages_fetched += 1
+            
+            # Sicherheit: Max 10 Seiten
+            if pages_fetched >= 10:
+                break
         
-        return meetings
+        return {
+            "meetings": all_meetings,
+            "pagination": pagination_info
+        }
+    
+    async def get_meetings(
+        self, 
+        municipality_oparl_url: str, 
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> List[Meeting]:
+        """Meetings für Municipality laden (Legacy-Methode)"""
+        result = await self.get_meetings_paginated(municipality_oparl_url, start_date, end_date)
+        return result["meetings"]
     
     async def get_meeting_details(self, meeting_oparl_url: str) -> Optional[Meeting]:
         """Vollständige Meeting-Details laden"""

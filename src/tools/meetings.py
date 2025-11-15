@@ -10,13 +10,17 @@ from typing import Optional
 async def get_meetings(
     municipality_oparl_url: str,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: Optional[int] = None
 ) -> list[TextContent]:
     """Sitzungen für Kommune abrufen"""
     provider = OParlProvider()
     
     try:
-        meetings = await provider.get_meetings(municipality_oparl_url, start_date, end_date)
+        meetings_data = await provider.get_meetings_paginated(
+            municipality_oparl_url, start_date, end_date, page, limit
+        )
         
         result = {
             "municipality_oparl_url": municipality_oparl_url,
@@ -31,9 +35,10 @@ async def get_meetings(
                     "cancelled": m.cancelled,
                     "web": m.web
                 }
-                for m in meetings
+                for m in meetings_data["meetings"]
             ],
-            "total": len(meetings)
+            "pagination": meetings_data["pagination"],
+            "total": len(meetings_data["meetings"])
         }
         
         return [TextContent(
@@ -129,7 +134,7 @@ async def get_protocol_text(meeting_oparl_url: str) -> list[TextContent]:
 # MCP Tool Definitions
 get_meetings_tool = Tool(
     name="get_meetings",
-    description="Sitzungen für eine Kommune abrufen, optional mit Datumsfilter",
+    description="Sitzungen für eine Kommune abrufen, optional mit Datumsfilter und Paginierung",
     inputSchema={
         "type": "object",
         "properties": {
@@ -144,6 +149,14 @@ get_meetings_tool = Tool(
             "end_date": {
                 "type": "string", 
                 "description": "Enddatum (ISO format, optional)"
+            },
+            "page": {
+                "type": "integer",
+                "description": "Seitennummer (optional, default: alle Seiten)"
+            },
+            "limit": {
+                "type": "integer", 
+                "description": "Maximale Anzahl Meetings (optional, default: alle)"
             }
         },
         "required": ["municipality_oparl_url"]
