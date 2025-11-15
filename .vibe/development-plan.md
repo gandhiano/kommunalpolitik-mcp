@@ -194,23 +194,30 @@ requests>=2.28.0
 ## Programmieren
 
 ### Phasen-Eintrittskriterien:
-- [ ] Detaillierte Implementierungsstrategie ist erstellt
-- [ ] Architektur und Design sind dokumentiert
-- [ ] Aufgaben sind in spezifische, umsetzbare Schritte unterteilt
-- [ ] Abhängigkeiten und potenzielle Herausforderungen sind identifiziert
+- [x] Detaillierte Implementierungsstrategie ist erstellt
+- [x] Architektur und Design sind dokumentiert
+- [x] Aufgaben sind in spezifische, umsetzbare Schritte unterteilt
+- [x] Abhängigkeiten und potenzielle Herausforderungen sind identifiziert
 
 ### Aufgaben
-- [ ] MCP Server Grundgerüst implementieren
-- [ ] OParl Provider Integration
-- [ ] Basis-Tools implementieren (municipalities, meetings, protocols)
-- [ ] JSON-Schemas implementieren
+- [x] MCP Server Grundgerüst implementieren
+- [x] OParl Provider Integration
+- [x] Basis-Tools implementieren (municipalities, meetings, protocols)
+- [x] JSON-Schemas implementieren
 - [ ] Error-Handling und Logging
-- [ ] Erweiterte Tools implementieren (agenda, documents, voting)
 - [ ] Integration Tests mit bestehenden Daten
+- [ ] Erweiterte Tools implementieren (agenda, documents, voting)
 - [ ] Dokumentation und README
 
 ### Abgeschlossen
-*Noch keine*
+- [x] Project structure erstellt (src/, tools/, providers/, schemas/)
+- [x] Requirements.txt mit MCP Dependencies
+- [x] OParl-konforme Pydantic Schemas (Municipality, Meeting, AgendaItem, File)
+- [x] BaseProvider Interface definiert
+- [x] OParlProvider implementiert mit HTTP Client
+- [x] MVP MCP Tools implementiert (list_municipalities, get_meetings, get_meeting_details, get_protocol_text)
+- [x] MCP Server Hauptdatei mit Tool-Routing
+- [x] Test-Script für Provider-Validierung
 
 ## Finalisieren
 

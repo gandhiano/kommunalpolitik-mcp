@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kommunalpolitik-mcp": {
+      "command": "./venv/bin/python",
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/path/to/your/kommunalpolitik-mcp"
+    }
+  }
+}

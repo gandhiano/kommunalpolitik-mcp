@@ -41,3 +41,11 @@ Thumbs.db
 
 # Cache
 .cache/
+
+# MCP Config (contains local paths)
+mcp_config.json
+
+# Exclude SQLite database files
+.vibe/*.sqlite
+.vibe/*.sqlite-*
+.vibe/conversation-state.sqlite*
