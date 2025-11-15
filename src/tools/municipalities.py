@@ -18,6 +18,7 @@ async def list_municipalities() -> list[TextContent]:
                 {
                     "id": m.id,
                     "name": m.name,
+                    "oparl_url": m.oparl_url,
                     "data_source": m.data_source,
                     "website": m.website
                 }

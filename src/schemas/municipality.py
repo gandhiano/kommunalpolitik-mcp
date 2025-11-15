@@ -6,8 +6,9 @@ from typing import Optional
 
 class Municipality(BaseModel):
     """OParl Body als Municipality für MCP Client"""
-    id: str  # OParl Body ID
+    id: str  # Kurze ID (z.B. "5205")
     name: str
+    oparl_url: str  # Vollständige OParl URL
     oparl_endpoint: str
     data_source: str = "oparl"
     last_updated: str  # ISO timestamp

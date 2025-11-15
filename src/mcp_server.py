@@ -50,12 +50,12 @@ async def handle_call_tool(name: str, arguments: dict):
     
     elif name == "get_meeting_details":
         return await get_meeting_details(
-            meeting_id=arguments["meeting_id"]
+            meeting_oparl_url=arguments["meeting_oparl_url"]
         )
     
     elif name == "get_protocol_text":
         return await get_protocol_text(
-            meeting_id=arguments["meeting_id"]
+            meeting_oparl_url=arguments["meeting_oparl_url"]
         )
     
     else:

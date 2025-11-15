@@ -2,6 +2,7 @@
 
 import aiohttp
 import json
+import re
 from typing import List, Optional
 from datetime import datetime
 from .base_provider import BaseProvider
@@ -14,6 +15,33 @@ class OParlProvider(BaseProvider):
     def __init__(self, base_url: str = "https://sessionnet-oparl.owl-it.de/oparl"):
         self.base_url = base_url
         self.session = None
+    
+    def _infer_city_name(self, website_url: str) -> str:
+        """Stadtname aus Website-URL extrahieren"""
+        if not website_url:
+            return "Unbekannt"
+        
+        # Extrahiere Stadtname aus URL wie "https://sessionnet.owl-it.de/rees/bi"
+        match = re.search(r'/([^/]+)/bi/?$', website_url)
+        if match:
+            city_slug = match.group(1)
+            # Konvertiere URL-Slug zu lesbarem Namen
+            city_name = city_slug.replace('-', ' ').title()
+            
+            # Spezielle Fälle korrigieren
+            replacements = {
+                'Stadt Ahaus': 'Ahaus',
+                'Vglandstuhl': 'VG Landstuhl',
+                'Kaiserslautern Kreis': 'Landkreis Kaiserslautern',
+                'Gruenheide Mark': 'Grünheide (Mark)',
+                'Fuerstenwalde Spree': 'Fürstenwalde/Spree',
+                'Bad Duerkheim': 'Bad Dürkheim',
+                'Woelfersheim': 'Wölfersheim'
+            }
+            
+            return replacements.get(city_name, city_name)
+        
+        return "Unbekannt"
     
     async def _get_session(self):
         """HTTP Session erstellen"""
@@ -56,13 +84,21 @@ class OParlProvider(BaseProvider):
         
         municipalities = []
         for body in bodies_data["data"]:
+            website = body.get("website", "")
+            city_name = self._infer_city_name(website)
+            
+            # Extrahiere nur die ID aus der OParl URL
+            oparl_id = body["id"]
+            municipality_id = oparl_id.split("/")[-1] if "/" in oparl_id else oparl_id
+            
             municipality = Municipality(
-                id=body["id"],
-                name=body.get("name", "Unbekannt"),
+                id=municipality_id,  # Nur die ID, nicht die volle URL
+                name=city_name,
+                oparl_url=oparl_id,  # Vollständige OParl URL für API calls
                 oparl_endpoint=self.base_url,
                 meeting_list_url=body.get("meeting", ""),
                 last_updated=datetime.now().isoformat(),
-                website=body.get("website")
+                website=website
             )
             municipalities.append(municipality)
         
@@ -94,8 +130,13 @@ class OParlProvider(BaseProvider):
         
         meetings = []
         for meeting_data in meetings_data["data"]:
+            # Extrahiere Meeting ID aus OParl URL
+            oparl_url = meeting_data["id"]
+            meeting_id = oparl_url.split("/")[-1] if "/" in oparl_url else oparl_url
+            
             meeting = Meeting(
-                id=meeting_data["id"],
+                id=meeting_id,  # Nur die Meeting ID
+                oparl_url=oparl_url,  # Vollständige OParl URL
                 name=meeting_data.get("name", ""),
                 meetingState=meeting_data.get("meetingState"),
                 cancelled=meeting_data.get("cancelled", False),
@@ -110,9 +151,9 @@ class OParlProvider(BaseProvider):
         
         return meetings
     
-    async def get_meeting_details(self, meeting_id: str) -> Optional[Meeting]:
+    async def get_meeting_details(self, meeting_oparl_url: str) -> Optional[Meeting]:
         """Vollständige Meeting-Details laden"""
-        meeting_data = await self._make_request(meeting_id)
+        meeting_data = await self._make_request(meeting_oparl_url)
         if not meeting_data:
             return None
         
@@ -150,7 +191,8 @@ class OParlProvider(BaseProvider):
             return None
         
         meeting = Meeting(
-            id=meeting_data["id"],
+            id=meeting_data["id"].split("/")[-1] if "/" in meeting_data["id"] else meeting_data["id"],  # Nur Meeting ID
+            oparl_url=meeting_data["id"],  # Vollständige OParl URL
             name=meeting_data.get("name", ""),
             meetingState=meeting_data.get("meetingState"),
             cancelled=meeting_data.get("cancelled", False),
@@ -169,9 +211,9 @@ class OParlProvider(BaseProvider):
         
         return meeting
     
-    async def get_protocol_text(self, meeting_id: str) -> Optional[str]:
+    async def get_protocol_text(self, meeting_oparl_url: str) -> Optional[str]:
         """Protokoll-Text für LLM extrahieren"""
-        meeting = await self.get_meeting_details(meeting_id)
+        meeting = await self.get_meeting_details(meeting_oparl_url)
         if not meeting:
             return None
         

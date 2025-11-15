@@ -37,7 +37,8 @@ class AgendaItem(BaseModel):
 
 class Meeting(BaseModel):
     """OParl Meeting Schema"""
-    id: str
+    id: str  # Meeting ID (z.B. "9918")
+    oparl_url: str  # Vollständige OParl URL
     type: str = "https://schema.oparl.org/1.1/Meeting"
     name: str
     meetingState: Optional[str] = None  # "terminiert" | "eingeladen" | "durchgeführt"

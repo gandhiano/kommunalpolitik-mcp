@@ -24,11 +24,11 @@ class BaseProvider(ABC):
         pass
     
     @abstractmethod
-    async def get_meeting_details(self, meeting_id: str) -> Optional[Meeting]:
+    async def get_meeting_details(self, meeting_oparl_url: str) -> Optional[Meeting]:
         """Detaillierte Meeting-Daten abrufen"""
         pass
     
     @abstractmethod
-    async def get_protocol_text(self, meeting_id: str) -> Optional[str]:
+    async def get_protocol_text(self, meeting_oparl_url: str) -> Optional[str]:
         """Protokoll-Volltext für LLM abrufen"""
         pass

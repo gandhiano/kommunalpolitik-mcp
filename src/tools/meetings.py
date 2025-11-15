@@ -23,6 +23,7 @@ async def get_meetings(
             "meetings": [
                 {
                     "id": m.id,
+                    "oparl_url": m.oparl_url,
                     "name": m.name,
                     "start": m.start,
                     "end": m.end,
@@ -44,12 +45,12 @@ async def get_meetings(
         await provider.close()
 
 
-async def get_meeting_details(meeting_id: str) -> list[TextContent]:
+async def get_meeting_details(meeting_oparl_url: str) -> list[TextContent]:
     """Detaillierte Meeting-Informationen abrufen"""
     provider = OParlProvider()
     
     try:
-        meeting = await provider.get_meeting_details(meeting_id)
+        meeting = await provider.get_meeting_details(meeting_oparl_url)
         
         if not meeting:
             return [TextContent(
@@ -60,6 +61,7 @@ async def get_meeting_details(meeting_id: str) -> list[TextContent]:
         result = {
             "meeting": {
                 "id": meeting.id,
+                "oparl_url": meeting.oparl_url,
                 "name": meeting.name,
                 "start": meeting.start,
                 "end": meeting.end,
@@ -96,12 +98,12 @@ async def get_meeting_details(meeting_id: str) -> list[TextContent]:
         await provider.close()
 
 
-async def get_protocol_text(meeting_id: str) -> list[TextContent]:
+async def get_protocol_text(meeting_oparl_url: str) -> list[TextContent]:
     """Protokoll-Volltext für LLM-Analyse abrufen"""
     provider = OParlProvider()
     
     try:
-        protocol_text = await provider.get_protocol_text(meeting_id)
+        protocol_text = await provider.get_protocol_text(meeting_oparl_url)
         
         if not protocol_text:
             return [TextContent(
@@ -110,7 +112,7 @@ async def get_protocol_text(meeting_id: str) -> list[TextContent]:
             )]
         
         result = {
-            "meeting_id": meeting_id,
+            "meeting_oparl_url": meeting_oparl_url,
             "protocol_text": protocol_text,
             "length": len(protocol_text)
         }
@@ -154,12 +156,12 @@ get_meeting_details_tool = Tool(
     inputSchema={
         "type": "object",
         "properties": {
-            "meeting_id": {
+            "meeting_oparl_url": {
                 "type": "string",
-                "description": "ID der Sitzung (aus get_meetings)"
+                "description": "OParl URL der Sitzung (aus get_meetings)"
             }
         },
-        "required": ["meeting_id"]
+        "required": ["meeting_oparl_url"]
     }
 )
 
@@ -169,11 +171,11 @@ get_protocol_text_tool = Tool(
     inputSchema={
         "type": "object",
         "properties": {
-            "meeting_id": {
+            "meeting_oparl_url": {
                 "type": "string",
-                "description": "ID der Sitzung"
+                "description": "OParl URL der Sitzung"
             }
         },
-        "required": ["meeting_id"]
+        "required": ["meeting_oparl_url"]
     }
 )
