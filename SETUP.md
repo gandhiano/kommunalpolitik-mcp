@@ -50,6 +50,20 @@ Für eine gehostete MCP-Instanz kann OpenCode direkt den Remote-Endpunkt nutzen:
 }
 ```
 
+Beispiele für Fragen:
+
+```text
+Was steht in der nächsten Stadtverordnetenversammlung an? Gibt es schon eine Tagesordnung und Unterlagen?
+```
+
+```text
+Erstelle mir eine kurze Briefing-Notiz für die nächste Sitzung: wichtigste TOPs, relevante Dokumente und mögliche Rückfragen.
+```
+
+```text
+Welche Beschlüsse oder Diskussionen gab es seit 2021 zum Haushalt? Bitte mit Sitzungsdatum und Quellenstellen.
+```
+
 Für lokale Entwicklung oder Tests läuft der MCP Server über `stdio`. Clients wie OpenCode, Claude Desktop oder der MCP Inspector starten ihn über eine Config:
 
 Lokale stdio-Config:
