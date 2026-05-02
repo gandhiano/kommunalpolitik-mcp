@@ -51,10 +51,9 @@ Possible later model:
 
 ## Near-Term Implementation Plan
 
-1. Add `pyproject.toml` and a `kommunalpolitik` CLI.
-2. Add Dockerfile and Docker Compose examples.
-3. Add HTTP MCP transport and hosted connector docs.
-4. Extract a clearer adapter interface once a second municipality is implemented.
+1. Add Dockerfile and Docker Compose examples.
+2. Add HTTP MCP transport and hosted connector docs.
+3. Extract a clearer adapter interface once a second municipality is implemented.
 
 ## Caveats
 

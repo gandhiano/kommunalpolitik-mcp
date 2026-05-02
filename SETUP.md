@@ -5,7 +5,7 @@
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## 2. MCP Inspector Setup
@@ -20,8 +20,8 @@ cp mcp_config.example.json mcp_config.json
 {
   "mcpServers": {
     "kommunalpolitik-mcp": {
-      "command": "/YOUR_ABSOLUTE_PATH/kommunalpolitik-mcp/.venv/bin/python",
-      "args": ["-m", "src.mcp_server"],
+      "command": "/YOUR_ABSOLUTE_PATH/kommunalpolitik-mcp/.venv/bin/kommunalpolitik-mcp",
+      "args": [],
       "cwd": "/YOUR_ABSOLUTE_PATH/kommunalpolitik-mcp"
     }
   }
@@ -41,8 +41,8 @@ Der MCP Server läuft über `stdio`. Clients wie OpenCode, Claude Desktop oder d
 {
   "mcpServers": {
     "kommunalpolitik-mcp": {
-      "command": "/ABSOLUTE/PATH/kommunalpolitik-mcp/.venv/bin/python",
-      "args": ["-m", "src.mcp_server"],
+      "command": "/ABSOLUTE/PATH/kommunalpolitik-mcp/.venv/bin/kommunalpolitik-mcp",
+      "args": [],
       "cwd": "/ABSOLUTE/PATH/kommunalpolitik-mcp",
       "env": {
         "KOMMUNALPOLITIK_CONFIG": "configs/municipalities/witzenhausen.json"
@@ -77,24 +77,26 @@ Die Standardkonfiguration liegt in `configs/municipalities/witzenhausen.json`. D
 
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt
-python -m src.ingest.witzenhausen init-db
-python -m src.ingest.witzenhausen --allow-public-crawl bodies
-python -m src.ingest.witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
-python -m src.ingest.witzenhausen --allow-public-crawl details --limit 25
-python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 25
-python -m src.ingest.witzenhausen extract-text --limit 25
-python -m src.ingest.witzenhausen index-chunks
-python -m src.ingest.witzenhausen extract-actors
-python -m src.ingest.witzenhausen status
+pip install -e .
+kommunalpolitik ingest witzenhausen init-db
+kommunalpolitik ingest witzenhausen --allow-public-crawl bodies
+kommunalpolitik ingest witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
+kommunalpolitik ingest witzenhausen --allow-public-crawl details --limit 25
+kommunalpolitik ingest witzenhausen --allow-public-crawl documents --limit 25
+kommunalpolitik ingest witzenhausen extract-text --limit 25
+kommunalpolitik ingest witzenhausen index-chunks
+kommunalpolitik ingest witzenhausen extract-actors
+kommunalpolitik ingest witzenhausen status
 ```
+
+Die bisherigen Modulaufrufe wie `python -m src.ingest.witzenhausen status` bleiben weiterhin nutzbar.
 
 Die Daten liegen danach lokal unter `data/witzenhausen/`. PDFs und extrahierte Texte werden ebenfalls dort gespeichert.
 
 Für eine vollständige lokale Datenbank inklusive Volltext- und Actor-Index:
 
 ```bash
-python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2000 --to-year 2026
+kommunalpolitik ingest witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2000 --to-year 2026
 ```
 
 Die Analyse-Tools basieren auf heuristischen Treffern. `strong` bedeutet, dass ein Handlungsverb wie `beantragt`, `fragt`, `bittet`, `kritisiert` oder `berichtet` nahe an der Person/Fraktion erkannt wurde. `weak` bedeutet nur eine Erwähnung in der Nähe des Snippets.

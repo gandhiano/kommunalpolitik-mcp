@@ -31,10 +31,10 @@ Das hält Suchergebnisse sauber auf eine Kommune begrenzt, reduziert versehentli
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python -m src.ingest.witzenhausen init-db
-python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2024 --to-year 2026
-python -m src.ingest.witzenhausen status
+pip install -e .
+kommunalpolitik ingest witzenhausen init-db
+kommunalpolitik ingest witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2024 --to-year 2026
+kommunalpolitik ingest witzenhausen status
 ```
 
 Die Witzenhausen-Defaults liegen in `configs/municipalities/witzenhausen.json`. Andere Pfade oder spätere Kommunen können über `--config` ausgewählt werden.
@@ -58,7 +58,7 @@ Für OpenCode als globalen lokalen MCP Server:
       "command": [
         "/bin/zsh",
         "-lc",
-        "cd /ABSOLUTE/PATH/kommunalpolitik-mcp && exec .venv/bin/python -m src.mcp_server"
+        "cd /ABSOLUTE/PATH/kommunalpolitik-mcp && exec .venv/bin/kommunalpolitik-mcp"
       ],
       "enabled": true,
       "environment": {
@@ -126,31 +126,33 @@ Die Einzelbefehle darunter sind nützlich für Entwicklung und Debugging:
 
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 
 # Lokale Datenbank anlegen
-python -m src.ingest.witzenhausen init-db
+kommunalpolitik ingest witzenhausen init-db
 
 # Öffentliche Gremien laden
-python -m src.ingest.witzenhausen --allow-public-crawl bodies
+kommunalpolitik ingest witzenhausen --allow-public-crawl bodies
 
 # Sitzungen laden, z.B. ab 2026
-python -m src.ingest.witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
+kommunalpolitik ingest witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
 
 # Details, Tagesordnung, Vorlagen- und Dokumentlinks laden
-python -m src.ingest.witzenhausen --allow-public-crawl details --limit 25
+kommunalpolitik ingest witzenhausen --allow-public-crawl details --limit 25
 
 # PDFs herunterladen und eingebetteten Text extrahieren
-python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 25
-python -m src.ingest.witzenhausen extract-text --limit 25
+kommunalpolitik ingest witzenhausen --allow-public-crawl documents --limit 25
+kommunalpolitik ingest witzenhausen extract-text --limit 25
 
 # Volltext in Such-Snippets aufteilen und Personen/Fraktionen heuristisch erkennen
-python -m src.ingest.witzenhausen index-chunks
-python -m src.ingest.witzenhausen extract-actors
+kommunalpolitik ingest witzenhausen index-chunks
+kommunalpolitik ingest witzenhausen extract-actors
 
 # Status anzeigen
-python -m src.ingest.witzenhausen status
+kommunalpolitik ingest witzenhausen status
 ```
+
+Die bisherigen Modulaufrufe wie `python -m src.ingest.witzenhausen status` bleiben für Entwicklung und Debugging nutzbar.
 
 Lokale Ausgabe:
 

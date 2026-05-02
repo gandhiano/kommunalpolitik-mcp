@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -23,7 +24,7 @@ from .sessionnet_repository import SessionNetRepository
 from .text_index import chunk_document, extract_actor_mentions
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Ingest public Witzenhausen SessionNet data")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH, help="Municipality config JSON path")
     parser.add_argument("--data-dir", type=Path, help="Override configured data directory")
@@ -74,7 +75,7 @@ def main() -> None:
     sync.add_argument("--download-limit", type=int, help="Maximum PDFs to download")
     sync.add_argument("--text-limit", type=int, help="Maximum PDFs to extract text from")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     config = load_municipality_config(args.config)
     data_dir = args.data_dir or config.data_dir
     repo = _repo(config, data_dir)

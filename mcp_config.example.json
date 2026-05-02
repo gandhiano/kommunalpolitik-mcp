@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "kommunalpolitik-mcp": {
-      "command": "/path/to/your/kommunalpolitik-mcp/.venv/bin/python",
-      "args": ["-m", "src.mcp_server"],
+      "command": "/path/to/your/kommunalpolitik-mcp/.venv/bin/kommunalpolitik-mcp",
+      "args": [],
       "cwd": "/path/to/your/kommunalpolitik-mcp",
       "env": {
         "KOMMUNALPOLITIK_CONFIG": "configs/municipalities/witzenhausen.json"

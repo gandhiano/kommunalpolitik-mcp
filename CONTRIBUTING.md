@@ -41,28 +41,28 @@ Bitte achte besonders darauf:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 Optionaler Smoke-Test mit kleinem Datensatz:
 
 ```bash
-python -m src.ingest.witzenhausen init-db
-python -m src.ingest.witzenhausen --allow-public-crawl bodies
-python -m src.ingest.witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026 --body-id 1
-python -m src.ingest.witzenhausen --allow-public-crawl details --limit 1
-python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 1
-python -m src.ingest.witzenhausen extract-text --limit 1
-python -m src.ingest.witzenhausen index-chunks --limit 1
-python -m src.ingest.witzenhausen extract-actors --limit 100
-python -m src.ingest.witzenhausen status
+kommunalpolitik ingest witzenhausen init-db
+kommunalpolitik ingest witzenhausen --allow-public-crawl bodies
+kommunalpolitik ingest witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026 --body-id 1
+kommunalpolitik ingest witzenhausen --allow-public-crawl details --limit 1
+kommunalpolitik ingest witzenhausen --allow-public-crawl documents --limit 1
+kommunalpolitik ingest witzenhausen extract-text --limit 1
+kommunalpolitik ingest witzenhausen index-chunks --limit 1
+kommunalpolitik ingest witzenhausen extract-actors --limit 100
+kommunalpolitik ingest witzenhausen status
 ```
 
 ## Prüfen vor einem Pull Request
 
 ```bash
 python -m compileall src
-python -m src.ingest.witzenhausen status
+kommunalpolitik ingest witzenhausen status
 ```
 
 Wenn du MCP-Tools änderst, teste sie zusätzlich über den MCP Inspector oder einen stdio-Client.
