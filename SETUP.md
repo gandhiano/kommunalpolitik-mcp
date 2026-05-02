@@ -45,9 +45,7 @@ Der MCP Server läuft über `stdio`. Clients wie OpenCode, Claude Desktop oder d
       "args": ["-m", "src.mcp_server"],
       "cwd": "/ABSOLUTE/PATH/kommunalpolitik-mcp",
       "env": {
-        "KOMMUNALPOLITIK_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite",
-        "KOMMUNALPOLITIK_MUNICIPALITY_ID": "witzenhausen",
-        "KOMMUNALPOLITIK_MUNICIPALITY_NAME": "Witzenhausen"
+        "KOMMUNALPOLITIK_CONFIG": "configs/municipalities/witzenhausen.json"
       }
     }
   }
@@ -74,6 +72,8 @@ MCP Tools:
 ChatGPT Custom Connectors benötigen einen öffentlich erreichbaren HTTP/SSE bzw. Streamable-HTTP MCP Server. Diese lokale `stdio`-Config reicht für OpenCode/Claude Desktop/Inspector, aber nicht direkt für ChatGPT. Dafür braucht es später einen kleinen HTTP-Transport oder Deployment.
 
 ## 4. Witzenhausen-Daten lokal laden
+
+Die Standardkonfiguration liegt in `configs/municipalities/witzenhausen.json`. Der CLI-Default verwendet diese Datei automatisch; mit `--config PFAD` kann eine andere Kommune/Konfiguration ausgewählt werden.
 
 ```bash
 source .venv/bin/activate

@@ -12,18 +12,33 @@ from typing import Any
 from mcp import Tool
 from mcp.types import TextContent
 
+from src.config import load_municipality_config
+
 
 DEFAULT_DB_PATH = Path("data/witzenhausen/witzenhausen.sqlite")
 
 
 def _db_path() -> Path:
-    return Path(os.environ.get("KOMMUNALPOLITIK_DB_PATH", DEFAULT_DB_PATH))
+    if db_path := os.environ.get("KOMMUNALPOLITIK_DB_PATH"):
+        return Path(db_path)
+    try:
+        return load_municipality_config().database_path
+    except FileNotFoundError:
+        return DEFAULT_DB_PATH
 
 
 def _municipality() -> dict[str, str]:
+    try:
+        config = load_municipality_config()
+        municipality_id = config.id
+        municipality_name = config.name
+    except FileNotFoundError:
+        municipality_id = "witzenhausen"
+        municipality_name = "Witzenhausen"
+
     return {
-        "id": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_ID", "witzenhausen"),
-        "name": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_NAME", "Witzenhausen"),
+        "id": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_ID", municipality_id),
+        "name": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_NAME", municipality_name),
     }
 
 

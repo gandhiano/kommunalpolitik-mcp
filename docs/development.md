@@ -34,8 +34,7 @@ Run these before merging changes that touch Python code or MCP behavior:
 For local Witzenhausen data changes or runtime config changes:
 
 ```bash
-KOMMUNALPOLITIK_DB_PATH=data/witzenhausen/witzenhausen.sqlite \
-  .venv/bin/python -m src.ingest.witzenhausen status
+.venv/bin/python -m src.ingest.witzenhausen status
 ```
 
 For MCP tool changes, run a stdio smoke test or check the configured client can list and call the tools.
