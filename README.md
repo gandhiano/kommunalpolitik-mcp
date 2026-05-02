@@ -167,6 +167,10 @@ Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to
 - ✅ Planung finalisiert
 - 🔄 Implementierung startet
 
+## Lizenz
+
+Dieses Projekt steht unter der Apache License 2.0. Siehe [LICENSE](LICENSE).
+
 ## 🛠️ Technologie
 
 - **Python** (bestehende Infrastruktur nutzen)
