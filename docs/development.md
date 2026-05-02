@@ -29,12 +29,13 @@ Run these before merging changes that touch Python code or MCP behavior:
 
 ```bash
 .venv/bin/python -m compileall src
+.venv/bin/pip install -e .
 ```
 
 For local Witzenhausen data changes or runtime config changes:
 
 ```bash
-.venv/bin/python -m src.ingest.witzenhausen status
+.venv/bin/kommunalpolitik ingest witzenhausen status
 ```
 
 For MCP tool changes, run a stdio smoke test or check the configured client can list and call the tools.
