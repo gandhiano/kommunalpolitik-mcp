@@ -1,0 +1,8 @@
+{
+  "id": "witzenhausen",
+  "name": "Witzenhausen",
+  "adapter": "sessionnet",
+  "base_url": "https://sessionnet.owl-it.de/witzenhausen/BI/",
+  "data_dir": "data/witzenhausen",
+  "database_path": "data/witzenhausen/witzenhausen.sqlite"
+}

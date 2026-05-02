@@ -51,14 +51,10 @@ Possible later model:
 
 ## Near-Term Implementation Plan
 
-1. Replace Witzenhausen-specific MCP tool names with generic names.
-2. Replace `WITZENHAUSEN_DB_PATH` with `KOMMUNALPOLITIK_DB_PATH`.
-3. Add generic municipality metadata environment variables such as `KOMMUNALPOLITIK_MUNICIPALITY_ID` and `KOMMUNALPOLITIK_MUNICIPALITY_NAME`.
-4. Update README/SETUP/OpenCode examples for generic tools.
-5. Add config-driven ingestion for `configs/municipalities/witzenhausen.json`.
-6. Add `pyproject.toml` and a `kommunalpolitik` CLI.
-7. Add Dockerfile and Docker Compose examples.
-8. Add HTTP MCP transport and hosted connector docs.
+1. Add `pyproject.toml` and a `kommunalpolitik` CLI.
+2. Add Dockerfile and Docker Compose examples.
+3. Add HTTP MCP transport and hosted connector docs.
+4. Extract a clearer adapter interface once a second municipality is implemented.
 
 ## Caveats
 

@@ -5,9 +5,7 @@
       "args": ["-m", "src.mcp_server"],
       "cwd": "/path/to/your/kommunalpolitik-mcp",
       "env": {
-        "KOMMUNALPOLITIK_DB_PATH": "/path/to/your/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite",
-        "KOMMUNALPOLITIK_MUNICIPALITY_ID": "witzenhausen",
-        "KOMMUNALPOLITIK_MUNICIPALITY_NAME": "Witzenhausen"
+        "KOMMUNALPOLITIK_CONFIG": "configs/municipalities/witzenhausen.json"
       }
     }
   }

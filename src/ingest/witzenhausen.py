@@ -9,10 +9,11 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from src.config import DEFAULT_CONFIG_PATH, MunicipalityConfig, load_municipality_config
+
 from .pdf_text import extract_pdf_text
 from .sessionnet_client import SessionNetClient
 from .sessionnet_parsers import (
-    BASE_URL,
     parse_bodies,
     parse_meeting_detail,
     parse_meeting_list,
@@ -22,12 +23,10 @@ from .sessionnet_repository import SessionNetRepository
 from .text_index import chunk_document, extract_actor_mentions
 
 
-DEFAULT_DATA_DIR = Path("data/witzenhausen")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest public Witzenhausen SessionNet data")
-    parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH, help="Municipality config JSON path")
+    parser.add_argument("--data-dir", type=Path, help="Override configured data directory")
     parser.add_argument("--delay", type=float, default=2.0, help="Delay between live HTTP requests")
     parser.add_argument("--force", action="store_true", help="Ignore cached HTML/PDF files")
     parser.add_argument(
@@ -76,46 +75,49 @@ def main() -> None:
     sync.add_argument("--text-limit", type=int, help="Maximum PDFs to extract text from")
 
     args = parser.parse_args()
-    repo = _repo(args.data_dir)
-    client = _client(args.data_dir, args.delay, not args.force)
+    config = load_municipality_config(args.config)
+    data_dir = args.data_dir or config.data_dir
+    repo = _repo(config, data_dir)
+    client = _client(config, data_dir, args.delay, not args.force)
 
     try:
         if args.command == "init-db":
             repo.init_schema()
-            print(json.dumps({"database": str(repo.db_path), "status": "initialized"}, indent=2))
+            print(json.dumps({"municipality": _municipality_payload(config), "database": str(repo.db_path), "status": "initialized"}, indent=2))
         elif args.command == "bodies":
             _require_crawl(args)
-            print(json.dumps(command_bodies(repo, client, args.force), indent=2, ensure_ascii=False))
+            print(json.dumps(command_bodies(repo, client, config.base_url, args.force), indent=2, ensure_ascii=False))
         elif args.command == "meetings":
             _require_crawl(args)
-            print(json.dumps(command_meetings(repo, client, args.from_year, args.to_year, args.body_id, args.force), indent=2, ensure_ascii=False))
+            print(json.dumps(command_meetings(repo, client, config.base_url, args.from_year, args.to_year, args.body_id, args.force), indent=2, ensure_ascii=False))
         elif args.command == "details":
             _require_crawl(args)
-            print(json.dumps(command_details(repo, client, args.limit, args.meeting_id, args.force), indent=2, ensure_ascii=False))
+            print(json.dumps(command_details(repo, client, config.base_url, args.limit, args.meeting_id, args.force), indent=2, ensure_ascii=False))
         elif args.command == "papers":
             _require_crawl(args)
-            print(json.dumps(command_papers(repo, client, args.limit, args.force), indent=2, ensure_ascii=False))
+            print(json.dumps(command_papers(repo, client, config.base_url, args.limit, args.force), indent=2, ensure_ascii=False))
         elif args.command == "documents":
             _require_crawl(args)
-            print(json.dumps(command_documents(repo, client, args.data_dir, args.limit, args.force), indent=2, ensure_ascii=False))
+            print(json.dumps(command_documents(repo, client, data_dir, args.limit, args.force), indent=2, ensure_ascii=False))
         elif args.command == "extract-text":
-            print(json.dumps(command_extract_text(repo, args.data_dir, args.limit), indent=2, ensure_ascii=False))
+            print(json.dumps(command_extract_text(repo, data_dir, args.limit), indent=2, ensure_ascii=False))
         elif args.command == "index-chunks":
             print(json.dumps(command_index_chunks(repo, args.limit, args.rebuild), indent=2, ensure_ascii=False))
         elif args.command == "extract-actors":
             print(json.dumps(command_extract_actors(repo, args.limit), indent=2, ensure_ascii=False))
         elif args.command == "status":
             repo.init_schema()
-            print(json.dumps(repo.counts(), indent=2, ensure_ascii=False))
+            print(json.dumps({"municipality": _municipality_payload(config), "database": str(repo.db_path), "counts": repo.counts()}, indent=2, ensure_ascii=False))
         elif args.command == "sync":
             _require_crawl(args)
             result = {
-                "bodies": command_bodies(repo, client, args.force),
-                "meetings": command_meetings(repo, client, args.from_year, args.to_year, None, args.force),
-                "details": command_details(repo, client, args.detail_limit, None, args.force),
-                "papers": command_papers(repo, client, args.paper_limit, args.force),
-                "documents": command_documents(repo, client, args.data_dir, args.download_limit, args.force),
-                "text": command_extract_text(repo, args.data_dir, args.text_limit),
+                "municipality": _municipality_payload(config),
+                "bodies": command_bodies(repo, client, config.base_url, args.force),
+                "meetings": command_meetings(repo, client, config.base_url, args.from_year, args.to_year, None, args.force),
+                "details": command_details(repo, client, config.base_url, args.detail_limit, None, args.force),
+                "papers": command_papers(repo, client, config.base_url, args.paper_limit, args.force),
+                "documents": command_documents(repo, client, data_dir, args.download_limit, args.force),
+                "text": command_extract_text(repo, data_dir, args.text_limit),
                 "chunks": command_index_chunks(repo, None, False),
                 "actors": command_extract_actors(repo, None),
                 "counts": repo.counts(),
@@ -125,16 +127,17 @@ def main() -> None:
         repo.close()
 
 
-def command_bodies(repo: SessionNetRepository, client: SessionNetClient, force: bool) -> dict[str, int]:
+def command_bodies(repo: SessionNetRepository, client: SessionNetClient, base_url: str, force: bool) -> dict[str, int]:
     repo.init_schema()
     html = client.get_text("gr0040.asp?__cwpall=1&", force=force)
-    bodies = parse_bodies(html, BASE_URL)
+    bodies = parse_bodies(html, base_url)
     return {"upserted": repo.upsert_bodies(bodies)}
 
 
 def command_meetings(
     repo: SessionNetRepository,
     client: SessionNetClient,
+    base_url: str,
     from_year: int,
     to_year: int,
     body_id: str | None,
@@ -150,7 +153,7 @@ def command_meetings(
         for year in range(from_year, to_year + 1):
             path = f"si0046.asp?__cjahr={year}&__cmonat=1&__canz=12&smccont=85&__osidat=d&__ksigrnr={body['id']}&__cselect=65536"
             html = client.get_text(path, force=force)
-            meetings = parse_meeting_list(html, body_id=body["id"], base_url=BASE_URL)
+            meetings = parse_meeting_list(html, body_id=body["id"], base_url=base_url)
             for meeting in meetings:
                 meeting["body_id"] = body["id"]
                 meeting["body_name"] = body["name"]
@@ -161,6 +164,7 @@ def command_meetings(
 def command_details(
     repo: SessionNetRepository,
     client: SessionNetClient,
+    base_url: str,
     limit: int | None,
     meeting_id: str | None,
     force: bool,
@@ -175,7 +179,7 @@ def command_details(
     meetings = agenda_items = papers = documents = 0
     for row in rows:
         html = client.get_text(row["detail_url"], force=force)
-        parsed = parse_meeting_detail(html, row["id"], BASE_URL)
+        parsed = parse_meeting_detail(html, row["id"], base_url)
         meeting = parsed["meeting"]
         meeting["body_id"] = row["body_id"]
         meetings += repo.upsert_meetings([meeting])
@@ -185,7 +189,7 @@ def command_details(
     return {"meetings": meetings, "agenda_items": agenda_items, "papers": papers, "documents": documents}
 
 
-def command_papers(repo: SessionNetRepository, client: SessionNetClient, limit: int | None, force: bool) -> dict[str, int]:
+def command_papers(repo: SessionNetRepository, client: SessionNetClient, base_url: str, limit: int | None, force: bool) -> dict[str, int]:
     repo.init_schema()
     sql = "SELECT * FROM papers ORDER BY first_seen_at"
     params = ()
@@ -197,7 +201,7 @@ def command_papers(repo: SessionNetRepository, client: SessionNetClient, limit: 
     papers = documents = 0
     for row in rows:
         html = client.get_text(row["detail_url"], force=force)
-        parsed = parse_paper_detail(html, row["id"], BASE_URL)
+        parsed = parse_paper_detail(html, row["id"], base_url)
         papers += repo.upsert_papers([parsed["paper"]])
         documents += repo.upsert_documents(parsed["documents"])
     return {"papers": papers, "documents": documents}
@@ -273,12 +277,18 @@ def command_extract_actors(repo: SessionNetRepository, limit: int | None) -> dic
     return {"chunks": len(chunks), "actor_mentions": mentions}
 
 
-def _repo(data_dir: Path) -> SessionNetRepository:
-    return SessionNetRepository(data_dir / "witzenhausen.sqlite")
+def _repo(config: MunicipalityConfig, data_dir: Path) -> SessionNetRepository:
+    if data_dir != config.data_dir:
+        return SessionNetRepository(data_dir / f"{config.id}.sqlite")
+    return SessionNetRepository(config.database_path)
 
 
-def _client(data_dir: Path, delay: float, use_cache: bool) -> SessionNetClient:
-    return SessionNetClient(BASE_URL, data_dir / "raw" / "html", delay_seconds=delay, use_cache=use_cache)
+def _client(config: MunicipalityConfig, data_dir: Path, delay: float, use_cache: bool) -> SessionNetClient:
+    return SessionNetClient(config.base_url, data_dir / "raw" / "html", delay_seconds=delay, use_cache=use_cache)
+
+
+def _municipality_payload(config: MunicipalityConfig) -> dict[str, str]:
+    return {"id": config.id, "name": config.name}
 
 
 def _require_crawl(args: argparse.Namespace) -> None:

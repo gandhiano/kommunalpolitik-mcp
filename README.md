@@ -37,6 +37,8 @@ python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-y
 python -m src.ingest.witzenhausen status
 ```
 
+Die Witzenhausen-Defaults liegen in `configs/municipalities/witzenhausen.json`. Andere Pfade oder spätere Kommunen können über `--config` ausgewählt werden.
+
 Danach den MCP Server lokal testen:
 
 ```bash
@@ -60,9 +62,7 @@ Für OpenCode als globalen lokalen MCP Server:
       ],
       "enabled": true,
       "environment": {
-        "KOMMUNALPOLITIK_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite",
-        "KOMMUNALPOLITIK_MUNICIPALITY_ID": "witzenhausen",
-        "KOMMUNALPOLITIK_MUNICIPALITY_NAME": "Witzenhausen"
+        "KOMMUNALPOLITIK_CONFIG": "configs/municipalities/witzenhausen.json"
       }
     }
   }
@@ -94,6 +94,7 @@ Typische Fragen:
 
 ```
 kommunalpolitik-mcp/
+├── configs/municipalities/    # Kommune-spezifische Runtime/Ingestion-Konfiguration
 ├── src/
 │   ├── ingest/                 # Witzenhausen/SessionNet Ingestion
 │   ├── tools/                  # MCP Tool Implementierungen
@@ -106,6 +107,8 @@ kommunalpolitik-mcp/
 ## Witzenhausen SessionNet Ingestion
 
 Witzenhausen nutzt ein öffentliches SessionNet-Bürgerinfoportal statt einer offenen OParl-API. Die neue lokale Ingestion liest ausschließlich öffentliche BI-Seiten, speichert Metadaten in SQLite und PDFs/Texte im lokalen Dateisystem.
+
+Die Standardkonfiguration steht in `configs/municipalities/witzenhausen.json` und enthält Kommune, Adapter, SessionNet-Basis-URL, Datenverzeichnis und SQLite-Pfad. Der CLI-Default nutzt diese Datei; alternativ kann eine andere Konfiguration mit `--config PFAD` angegeben werden.
 
 Für eine vollständige lokale Datenbank kann `sync` über alle Jahre laufen. Das dauert länger und benötigt mehrere GB Speicherplatz:
 
