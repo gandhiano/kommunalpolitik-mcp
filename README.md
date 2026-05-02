@@ -1,6 +1,57 @@
 # Kommunalpolitik MCP Server
 
-Ein Model Context Protocol (MCP) Server für deutsche Kommunalpolitik, der strukturierten Zugang zu Sitzungen, Protokollen und politischen Daten über die OParl API bereitstellt.
+Ein lokaler Model Context Protocol (MCP) Server für deutsche Kommunalpolitik. Der aktuelle Fokus liegt auf Witzenhausen: öffentliche SessionNet-Daten werden lokal in SQLite/PDF/Text gespeichert und über MCP-Tools für LLMs wie OpenCode, Claude Desktop oder den MCP Inspector nutzbar gemacht.
+
+## Schnellstart
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m src.ingest.witzenhausen init-db
+python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2024 --to-year 2026
+python -m src.ingest.witzenhausen status
+```
+
+Danach den MCP Server lokal testen:
+
+```bash
+cp mcp_config.example.json mcp_config.json
+# mcp_config.json: absolute Pfade anpassen
+npx @modelcontextprotocol/inspector mcp_config.json
+```
+
+Für OpenCode als globalen lokalen MCP Server:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "kommunalpolitik": {
+      "type": "local",
+      "command": [
+        "/bin/zsh",
+        "-lc",
+        "cd /ABSOLUTE/PATH/kommunalpolitik-mcp && exec .venv/bin/python -m src.mcp_server"
+      ],
+      "enabled": true,
+      "environment": {
+        "WITZENHAUSEN_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite"
+      }
+    }
+  }
+}
+```
+
+Beispielfragen in OpenCode:
+
+```text
+Use kommunalpolitik to search Witzenhausen text for Haushalt from 2021 to 2026, limited to minutes.
+```
+
+```text
+Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
+```
 
 ## 🎯 Ziel
 
@@ -51,6 +102,20 @@ kommunalpolitik-mcp/
 
 Witzenhausen nutzt ein öffentliches SessionNet-Bürgerinfoportal statt einer offenen OParl-API. Die neue lokale Ingestion liest ausschließlich öffentliche BI-Seiten, speichert Metadaten in SQLite und PDFs/Texte im lokalen Dateisystem.
 
+Für eine vollständige lokale Datenbank kann `sync` über alle Jahre laufen. Das dauert länger und benötigt mehrere GB Speicherplatz:
+
+```bash
+python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2000 --to-year 2026
+```
+
+Für regelmäßige Aktualisierungen reicht normalerweise ein kleiner aktueller Zeitraum:
+
+```bash
+python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2025 --to-year 2026
+```
+
+Die Einzelbefehle darunter sind nützlich für Entwicklung und Debugging:
+
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -96,6 +161,8 @@ Hinweise:
 - HTML wird lokal gecacht, PDFs werden nur einmal heruntergeladen.
 - Dokumente mit `NS`, `Niederschrift` oder `Protokoll` werden als `minutes` klassifiziert.
 - Für Analysefragen gibt es zusätzlich einen lokalen FTS-Index über Text-Chunks und heuristische Actor-Mentions für Personen, Parteien und Fraktionen.
+- Die lokalen Daten unter `data/` werden nicht versioniert.
+- Die Heuristiken liefern Evidenzstellen, keine rechtlich/verbindliche politische Bewertung. Zusammenfassungen sollten mit Quellen/Snippets arbeiten.
 
 ## 🔧 MCP Tools
 
@@ -170,6 +237,10 @@ Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to
 ## Lizenz
 
 Dieses Projekt steht unter der Apache License 2.0. Siehe [LICENSE](LICENSE).
+
+## Beitragen
+
+Beiträge sind willkommen. Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🛠️ Technologie
 
