@@ -69,6 +69,14 @@ Für OpenCode als globalen lokalen MCP Server:
 }
 ```
 
+Für HTTP-/Server-Deployments steht zusätzlich ein Streamable-HTTP-Transport bereit:
+
+```bash
+kommunalpolitik http --host 0.0.0.0 --port 8000
+```
+
+Der MCP-Endpunkt liegt dann unter `/mcp`, ein einfacher Healthcheck unter `/health`.
+
 Beispielfragen in OpenCode:
 
 ```text

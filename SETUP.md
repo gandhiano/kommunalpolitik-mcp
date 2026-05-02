@@ -71,6 +71,14 @@ MCP Tools:
 
 ChatGPT Custom Connectors benötigen einen öffentlich erreichbaren HTTP/SSE bzw. Streamable-HTTP MCP Server. Diese lokale `stdio`-Config reicht für OpenCode/Claude Desktop/Inspector, aber nicht direkt für ChatGPT. Dafür braucht es später einen kleinen HTTP-Transport oder Deployment.
 
+Für Server-Deployments kann der Streamable-HTTP-Transport gestartet werden:
+
+```bash
+kommunalpolitik http --host 0.0.0.0 --port 8000
+```
+
+Der MCP-Endpunkt ist `/mcp`, der Healthcheck ist `/health`.
+
 ## 4. Witzenhausen-Daten lokal laden
 
 Die Standardkonfiguration liegt in `configs/municipalities/witzenhausen.json`. Der CLI-Default verwendet diese Datei automatisch; mit `--config PFAD` kann eine andere Kommune/Konfiguration ausgewählt werden.

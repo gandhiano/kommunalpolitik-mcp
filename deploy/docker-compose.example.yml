@@ -1,0 +1,21 @@
+networks:
+  web:
+    external: true
+
+services:
+  kommunalpolitik-mcp:
+    build:
+      context: .
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data:ro
+      - ./configs:/app/configs:ro
+    environment:
+      KOMMUNALPOLITIK_CONFIG: configs/municipalities/witzenhausen.json
+    networks:
+      - web
+    labels:
+      traefik.enable: true
+      traefik.http.routers.kommunalpolitik-mcp-web.entrypoints: web
+      traefik.http.routers.kommunalpolitik-mcp-web.rule: Host(`kommunalpolitik.example.org`)
+      traefik.http.services.kommunalpolitik-mcp.loadbalancer.server.port: 8000
