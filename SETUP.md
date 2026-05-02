@@ -33,14 +33,7 @@ cp mcp_config.example.json mcp_config.json
 npx @modelcontextprotocol/inspector mcp_config.json
 ```
 
-## 3. Test Server
-
-```bash
-source .venv/bin/activate
-python test_server.py
-```
-
-## 3.1 MCP lokal verwenden
+## 3. MCP lokal verwenden
 
 Der MCP Server läuft über `stdio`. Clients wie OpenCode, Claude Desktop oder der MCP Inspector starten ihn über eine Config:
 

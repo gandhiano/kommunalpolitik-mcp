@@ -42,6 +42,10 @@ Thumbs.db
 # Cache
 .cache/
 
+# Local assistant/workflow metadata
+.vibe/
+.amazonq/
+
 # Local ingestion output
 /data/
 

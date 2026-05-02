@@ -1,5 +1,0 @@
-# Exclude SQLite database files
-*.sqlite
-*.sqlite-*
-conversation.sqlite
-conversation-state.sqlite*
