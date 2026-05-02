@@ -1,4 +1,4 @@
-"""MCP tools for locally ingested Witzenhausen SessionNet data."""
+"""MCP tools for locally ingested municipal politics data."""
 
 from __future__ import annotations
 
@@ -17,14 +17,21 @@ DEFAULT_DB_PATH = Path("data/witzenhausen/witzenhausen.sqlite")
 
 
 def _db_path() -> Path:
-    return Path(os.environ.get("WITZENHAUSEN_DB_PATH", DEFAULT_DB_PATH))
+    return Path(os.environ.get("KOMMUNALPOLITIK_DB_PATH", DEFAULT_DB_PATH))
+
+
+def _municipality() -> dict[str, str]:
+    return {
+        "id": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_ID", "witzenhausen"),
+        "name": os.environ.get("KOMMUNALPOLITIK_MUNICIPALITY_NAME", "Witzenhausen"),
+    }
 
 
 def _connect() -> sqlite3.Connection:
     db_path = _db_path()
     if not db_path.exists():
         raise FileNotFoundError(
-            f"Witzenhausen database not found at {db_path}. Run: python -m src.ingest.witzenhausen init-db"
+            f"Municipal politics database not found at {db_path}. Run the ingestion command for your municipality first."
         )
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
@@ -39,22 +46,22 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     return dict(row)
 
 
-async def list_witzenhausen_bodies(limit: int = 100) -> list[TextContent]:
-    """List locally ingested Witzenhausen bodies/gremia."""
+async def list_bodies(limit: int = 100) -> list[TextContent]:
+    """List locally ingested bodies/gremia."""
     with _connect() as connection:
         rows = connection.execute(
             "SELECT id, name, detail_url, meeting_list_url FROM bodies ORDER BY name LIMIT ?",
             (limit,),
         ).fetchall()
-    return _content({"bodies": [_row_to_dict(row) for row in rows], "total": len(rows)})
+    return _content({"municipality": _municipality(), "bodies": [_row_to_dict(row) for row in rows], "total": len(rows)})
 
 
-async def list_witzenhausen_meetings(
+async def list_meetings(
     body_id: str | None = None,
     year: int | None = None,
     limit: int = 20,
 ) -> list[TextContent]:
-    """List locally ingested Witzenhausen meetings."""
+    """List locally ingested meetings."""
     clauses: list[str] = []
     params: list[Any] = []
     if body_id:
@@ -77,10 +84,10 @@ async def list_witzenhausen_meetings(
             """,
             params,
         ).fetchall()
-    return _content({"meetings": [_row_to_dict(row) for row in rows], "total": len(rows)})
+    return _content({"municipality": _municipality(), "meetings": [_row_to_dict(row) for row in rows], "total": len(rows)})
 
 
-async def get_witzenhausen_meeting(meeting_id: str) -> list[TextContent]:
+async def get_meeting(meeting_id: str) -> list[TextContent]:
     """Get one meeting with agenda items and documents."""
     with _connect() as connection:
         meeting = connection.execute(
@@ -118,12 +125,12 @@ async def get_witzenhausen_meeting(meeting_id: str) -> list[TextContent]:
     )
 
 
-async def search_witzenhausen_documents(
+async def search_documents(
     query: str,
     document_type: str | None = None,
     limit: int = 10,
 ) -> list[TextContent]:
-    """Search locally extracted Witzenhausen document text and document names."""
+    """Search locally extracted document text and document names."""
     like = f"%{query}%"
     clauses = ["(d.name LIKE ? OR t.text LIKE ?)"]
     params: list[Any] = [like, like]
@@ -154,11 +161,11 @@ async def search_witzenhausen_documents(
             params,
         ).fetchall()
 
-    return _content({"query": query, "results": [_row_to_dict(row) for row in rows], "total": len(rows)})
+    return _content({"municipality": _municipality(), "query": query, "results": [_row_to_dict(row) for row in rows], "total": len(rows)})
 
 
-async def get_witzenhausen_document_text(document_id: str) -> list[TextContent]:
-    """Return extracted full text for a downloaded Witzenhausen document."""
+async def get_document_text(document_id: str) -> list[TextContent]:
+    """Return extracted full text for a downloaded document."""
     with _connect() as connection:
         row = connection.execute(
             """
@@ -177,13 +184,13 @@ async def get_witzenhausen_document_text(document_id: str) -> list[TextContent]:
             {
                 "error": "Document text not extracted yet",
                 "document_id": document_id,
-                "hint": "Run: python -m src.ingest.witzenhausen extract-text --limit 25",
+                "hint": "Run text extraction for your municipality first.",
             }
         )
     return _content({"document": _row_to_dict(row)})
 
 
-async def search_witzenhausen_text(
+async def search_text(
     query: str,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -233,10 +240,10 @@ async def search_witzenhausen_text(
             """,
             params,
         ).fetchall()
-    return _content({"query": query, "results": [_row_to_dict(row) for row in rows], "total": len(rows)})
+    return _content({"municipality": _municipality(), "query": query, "results": [_row_to_dict(row) for row in rows], "total": len(rows)})
 
 
-async def find_witzenhausen_actor_topics(
+async def find_actor_topics(
     actor: str,
     topic: str | None = None,
     actor_type: str | None = None,
@@ -308,6 +315,7 @@ async def find_witzenhausen_actor_topics(
         {
             "actor": actor,
             "topic": topic,
+            "municipality": _municipality(),
             "note": "strong means an action verb was detected near the actor; weak means a nearby mention only.",
             "results": [_row_to_dict(row) for row in rows],
             "total": len(rows),
@@ -315,7 +323,7 @@ async def find_witzenhausen_actor_topics(
     )
 
 
-async def get_witzenhausen_evidence_pack(
+async def get_evidence_pack(
     actor: str | None = None,
     topic: str | None = None,
     from_date: str | None = None,
@@ -325,7 +333,7 @@ async def get_witzenhausen_evidence_pack(
 ) -> list[TextContent]:
     """Return grouped evidence for summarization by meeting and document."""
     if actor:
-        actor_result = await find_witzenhausen_actor_topics(
+        actor_result = await find_actor_topics(
             actor=actor,
             topic=topic,
             from_date=from_date,
@@ -337,7 +345,7 @@ async def get_witzenhausen_evidence_pack(
         payload = json.loads(actor_result[0].text)
         rows = payload["results"]
     elif topic:
-        topic_result = await search_witzenhausen_text(
+        topic_result = await search_text(
             query=topic,
             from_date=from_date,
             to_date=to_date,
@@ -366,12 +374,12 @@ async def get_witzenhausen_evidence_pack(
         )
         group["snippets"].append(row.get("snippet"))
 
-    return _content({"actor": actor, "topic": topic, "groups": list(grouped.values()), "total_groups": len(grouped)})
+    return _content({"municipality": _municipality(), "actor": actor, "topic": topic, "groups": list(grouped.values()), "total_groups": len(grouped)})
 
 
-list_witzenhausen_bodies_tool = Tool(
-    name="list_witzenhausen_bodies",
-    description="List locally ingested Witzenhausen committees/bodies from SessionNet",
+list_bodies_tool = Tool(
+    name="list_bodies",
+    description="List locally ingested municipal committees/bodies",
     inputSchema={
         "type": "object",
         "properties": {"limit": {"type": "integer", "description": "Maximum number of bodies"}},
@@ -379,9 +387,9 @@ list_witzenhausen_bodies_tool = Tool(
     },
 )
 
-list_witzenhausen_meetings_tool = Tool(
-    name="list_witzenhausen_meetings",
-    description="List locally ingested Witzenhausen meetings, optionally filtered by body and year",
+list_meetings_tool = Tool(
+    name="list_meetings",
+    description="List locally ingested meetings, optionally filtered by body and year",
     inputSchema={
         "type": "object",
         "properties": {
@@ -393,9 +401,9 @@ list_witzenhausen_meetings_tool = Tool(
     },
 )
 
-get_witzenhausen_meeting_tool = Tool(
-    name="get_witzenhausen_meeting",
-    description="Get one Witzenhausen meeting with agenda items and meeting-level documents",
+get_meeting_tool = Tool(
+    name="get_meeting",
+    description="Get one meeting with agenda items and meeting-level documents",
     inputSchema={
         "type": "object",
         "properties": {"meeting_id": {"type": "string", "description": "SessionNet meeting id"}},
@@ -403,9 +411,9 @@ get_witzenhausen_meeting_tool = Tool(
     },
 )
 
-search_witzenhausen_documents_tool = Tool(
-    name="search_witzenhausen_documents",
-    description="Search locally extracted Witzenhausen document text and document names",
+search_documents_tool = Tool(
+    name="search_documents",
+    description="Search locally extracted document text and document names",
     inputSchema={
         "type": "object",
         "properties": {
@@ -420,9 +428,9 @@ search_witzenhausen_documents_tool = Tool(
     },
 )
 
-get_witzenhausen_document_text_tool = Tool(
-    name="get_witzenhausen_document_text",
-    description="Get extracted full text for a Witzenhausen document by SessionNet file id",
+get_document_text_tool = Tool(
+    name="get_document_text",
+    description="Get extracted full text for a document by source file id",
     inputSchema={
         "type": "object",
         "properties": {"document_id": {"type": "string", "description": "SessionNet getfile id"}},
@@ -430,9 +438,9 @@ get_witzenhausen_document_text_tool = Tool(
     },
 )
 
-search_witzenhausen_text_tool = Tool(
-    name="search_witzenhausen_text",
-    description="Search chunked Witzenhausen full text with snippets and filters",
+search_text_tool = Tool(
+    name="search_text",
+    description="Search chunked municipal full text with snippets and filters",
     inputSchema={
         "type": "object",
         "properties": {
@@ -447,9 +455,9 @@ search_witzenhausen_text_tool = Tool(
     },
 )
 
-find_witzenhausen_actor_topics_tool = Tool(
-    name="find_witzenhausen_actor_topics",
-    description="Find evidence snippets for a person, party, or faction in Witzenhausen minutes/documents",
+find_actor_topics_tool = Tool(
+    name="find_actor_topics",
+    description="Find evidence snippets for a person, party, or faction in local minutes/documents",
     inputSchema={
         "type": "object",
         "properties": {
@@ -467,9 +475,9 @@ find_witzenhausen_actor_topics_tool = Tool(
     },
 )
 
-get_witzenhausen_evidence_pack_tool = Tool(
-    name="get_witzenhausen_evidence_pack",
-    description="Return grouped Witzenhausen evidence snippets for summarization by actor/topic/date range",
+get_evidence_pack_tool = Tool(
+    name="get_evidence_pack",
+    description="Return grouped evidence snippets for summarization by actor/topic/date range",
     inputSchema={
         "type": "object",
         "properties": {

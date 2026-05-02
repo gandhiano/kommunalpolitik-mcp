@@ -2,7 +2,7 @@
 """
 Kommunalpolitik MCP Server
 
-Lokaler MCP Server für kommunalpolitische Witzenhausen-Daten.
+Lokaler MCP Server für kommunalpolitische Daten.
 """
 
 import asyncio
@@ -11,22 +11,22 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool
 
 from .tools.witzenhausen import (
-    get_witzenhausen_document_text,
-    get_witzenhausen_document_text_tool,
-    get_witzenhausen_evidence_pack,
-    get_witzenhausen_evidence_pack_tool,
-    get_witzenhausen_meeting,
-    get_witzenhausen_meeting_tool,
-    find_witzenhausen_actor_topics,
-    find_witzenhausen_actor_topics_tool,
-    list_witzenhausen_bodies,
-    list_witzenhausen_bodies_tool,
-    list_witzenhausen_meetings,
-    list_witzenhausen_meetings_tool,
-    search_witzenhausen_documents,
-    search_witzenhausen_documents_tool,
-    search_witzenhausen_text,
-    search_witzenhausen_text_tool,
+    find_actor_topics,
+    find_actor_topics_tool,
+    get_document_text,
+    get_document_text_tool,
+    get_evidence_pack,
+    get_evidence_pack_tool,
+    get_meeting,
+    get_meeting_tool,
+    list_bodies,
+    list_bodies_tool,
+    list_meetings,
+    list_meetings_tool,
+    search_documents,
+    search_documents_tool,
+    search_text,
+    search_text_tool,
 )
 
 # MCP Server erstellen
@@ -37,14 +37,14 @@ server = Server("kommunalpolitik-mcp")
 async def handle_list_tools() -> list[Tool]:
     """Verfügbare MCP Tools auflisten"""
     return [
-        list_witzenhausen_bodies_tool,
-        list_witzenhausen_meetings_tool,
-        get_witzenhausen_meeting_tool,
-        search_witzenhausen_documents_tool,
-        get_witzenhausen_document_text_tool,
-        search_witzenhausen_text_tool,
-        find_witzenhausen_actor_topics_tool,
-        get_witzenhausen_evidence_pack_tool,
+        list_bodies_tool,
+        list_meetings_tool,
+        get_meeting_tool,
+        search_documents_tool,
+        get_document_text_tool,
+        search_text_tool,
+        find_actor_topics_tool,
+        get_evidence_pack_tool,
     ]
 
 
@@ -53,37 +53,37 @@ async def handle_call_tool(name: str, arguments: dict):
     """MCP Tool aufrufen"""
     
     try:
-        if name == "list_witzenhausen_bodies":
-            return await list_witzenhausen_bodies(
+        if name == "list_bodies":
+            return await list_bodies(
                 limit=arguments.get("limit", 100)
             )
 
-        elif name == "list_witzenhausen_meetings":
-            return await list_witzenhausen_meetings(
+        elif name == "list_meetings":
+            return await list_meetings(
                 body_id=arguments.get("body_id"),
                 year=arguments.get("year"),
                 limit=arguments.get("limit", 20)
             )
 
-        elif name == "get_witzenhausen_meeting":
-            return await get_witzenhausen_meeting(
+        elif name == "get_meeting":
+            return await get_meeting(
                 meeting_id=arguments["meeting_id"]
             )
 
-        elif name == "search_witzenhausen_documents":
-            return await search_witzenhausen_documents(
+        elif name == "search_documents":
+            return await search_documents(
                 query=arguments["query"],
                 document_type=arguments.get("document_type"),
                 limit=arguments.get("limit", 10)
             )
 
-        elif name == "get_witzenhausen_document_text":
-            return await get_witzenhausen_document_text(
+        elif name == "get_document_text":
+            return await get_document_text(
                 document_id=arguments["document_id"]
             )
 
-        elif name == "search_witzenhausen_text":
-            return await search_witzenhausen_text(
+        elif name == "search_text":
+            return await search_text(
                 query=arguments["query"],
                 from_date=arguments.get("from_date"),
                 to_date=arguments.get("to_date"),
@@ -92,8 +92,8 @@ async def handle_call_tool(name: str, arguments: dict):
                 limit=arguments.get("limit", 20)
             )
 
-        elif name == "find_witzenhausen_actor_topics":
-            return await find_witzenhausen_actor_topics(
+        elif name == "find_actor_topics":
+            return await find_actor_topics(
                 actor=arguments["actor"],
                 topic=arguments.get("topic"),
                 actor_type=arguments.get("actor_type"),
@@ -105,8 +105,8 @@ async def handle_call_tool(name: str, arguments: dict):
                 limit=arguments.get("limit", 30)
             )
 
-        elif name == "get_witzenhausen_evidence_pack":
-            return await get_witzenhausen_evidence_pack(
+        elif name == "get_evidence_pack":
+            return await get_evidence_pack(
                 actor=arguments.get("actor"),
                 topic=arguments.get("topic"),
                 from_date=arguments.get("from_date"),

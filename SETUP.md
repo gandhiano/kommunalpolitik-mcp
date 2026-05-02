@@ -45,7 +45,9 @@ Der MCP Server läuft über `stdio`. Clients wie OpenCode, Claude Desktop oder d
       "args": ["-m", "src.mcp_server"],
       "cwd": "/ABSOLUTE/PATH/kommunalpolitik-mcp",
       "env": {
-        "WITZENHAUSEN_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite"
+        "KOMMUNALPOLITIK_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite",
+        "KOMMUNALPOLITIK_MUNICIPALITY_ID": "witzenhausen",
+        "KOMMUNALPOLITIK_MUNICIPALITY_NAME": "Witzenhausen"
       }
     }
   }
@@ -58,13 +60,16 @@ Zum Testen mit dem MCP Inspector:
 npx @modelcontextprotocol/inspector mcp_config.json
 ```
 
-Neue Witzenhausen-Tools:
+MCP Tools:
 
-- `list_witzenhausen_bodies`
-- `list_witzenhausen_meetings`
-- `get_witzenhausen_meeting`
-- `search_witzenhausen_documents`
-- `get_witzenhausen_document_text`
+- `list_bodies`
+- `list_meetings`
+- `get_meeting`
+- `search_documents`
+- `get_document_text`
+- `search_text`
+- `find_actor_topics`
+- `get_evidence_pack`
 
 ChatGPT Custom Connectors benötigen einen öffentlich erreichbaren HTTP/SSE bzw. Streamable-HTTP MCP Server. Diese lokale `stdio`-Config reicht für OpenCode/Claude Desktop/Inspector, aber nicht direkt für ChatGPT. Dafür braucht es später einen kleinen HTTP-Transport oder Deployment.
 

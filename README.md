@@ -60,7 +60,9 @@ Für OpenCode als globalen lokalen MCP Server:
       ],
       "enabled": true,
       "environment": {
-        "WITZENHAUSEN_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite"
+        "KOMMUNALPOLITIK_DB_PATH": "/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite",
+        "KOMMUNALPOLITIK_MUNICIPALITY_ID": "witzenhausen",
+        "KOMMUNALPOLITIK_MUNICIPALITY_NAME": "Witzenhausen"
       }
     }
   }
@@ -183,12 +185,14 @@ Wenn du dieses Projekt für deine Kommune adaptieren, in einen lokalen Workflow 
 
 ## MCP Tools
 
-- `list_witzenhausen_bodies()` - Gremien/Fraktionen auflisten
-- `list_witzenhausen_meetings()` - Sitzungen nach Gremium/Jahr listen
-- `get_witzenhausen_meeting()` - Sitzung mit Tagesordnung und Dokumenten abrufen
-- `search_witzenhausen_text()` - Volltext-Snippet-Suche mit Datum/Gremium/Dokumenttyp-Filtern
-- `find_witzenhausen_actor_topics()` - Evidenzstellen für Person, Partei oder Fraktion suchen
-- `get_witzenhausen_evidence_pack()` - Evidenzstellen gruppiert für Zusammenfassungen abrufen
+- `list_bodies()` - Gremien/Fraktionen auflisten
+- `list_meetings()` - Sitzungen nach Gremium/Jahr listen
+- `get_meeting()` - Sitzung mit Tagesordnung und Dokumenten abrufen
+- `search_documents()` - Dokumentnamen und extrahierte Texte durchsuchen
+- `get_document_text()` - extrahierten Volltext eines Dokuments abrufen
+- `search_text()` - Volltext-Snippet-Suche mit Datum/Gremium/Dokumenttyp-Filtern
+- `find_actor_topics()` - Evidenzstellen für Person, Partei oder Fraktion suchen
+- `get_evidence_pack()` - Evidenzstellen gruppiert für Zusammenfassungen abrufen
 
 Beispiele für Agent/LLM-Fragen:
 
