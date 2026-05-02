@@ -30,7 +30,11 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             yield
 
     async def handle_mcp(scope: Scope, receive: Receive, send: Send) -> None:
-        await session_manager.handle_request(scope, receive, send)
+        if scope["type"] == "http" and scope.get("path") in {"/mcp", "/mcp/"}:
+            await session_manager.handle_request(scope, receive, send)
+            return
+        response = JSONResponse({"error": "Not found"}, status_code=404)
+        await response(scope, receive, send)
 
     async def health(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok", "transport": "streamable-http"})
@@ -40,7 +44,7 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
         lifespan=lifespan,
         routes=[
             Route("/health", endpoint=health, methods=["GET"]),
-            Mount("/mcp", app=handle_mcp),
+            Mount("/", app=handle_mcp),
         ],
     )
 
