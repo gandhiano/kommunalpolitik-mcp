@@ -24,7 +24,7 @@ Weitere Kommunen sind willkommen. Neue Kommunen sollten als Adapter/Konfiguratio
 
 Empfohlen ist zunächst **eine lokale Datenbank und ein MCP-Runtime pro Kommune**.
 
-Das hält Suchergebnisse sauber auf eine Kommune begrenzt, reduziert versehentliche Vermischung, erleichtert Updates und macht Quell-spezifische Rate-Limits und Datenqualitätsprüfungen einfacher. Ein Multi-Kommunen-Betrieb kann später auf einer gemeinsamen Basis entstehen, sollte aber explizit mit `municipality_id`/Mandantenfähigkeit modelliert werden.
+Das hält Suchergebnisse sauber auf eine Kommune begrenzt, reduziert versehentliche Vermischung und erleichtert Updates. Ein Multi-Kommunen-Betrieb ist denkbar, aber noch nicht Ziel der aktuellen Implementierung.
 
 ## Schnellstart
 
@@ -77,50 +77,32 @@ Use kommunalpolitik to search Witzenhausen text for Haushalt from 2021 to 2026, 
 Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
 ```
 
-## 🎯 Ziel
+## Ziel
 
-Dieser MCP Server agiert als **Datenquelle und Kontext-Provider** für Client-LLMs und ermöglicht:
-- Automatische Zusammenfassungen von Sitzungsprotokollen
-- Suche nach Themen über mehrere Sitzungen hinweg
-- Analyse von Abstimmungsverhalten
-- Benachrichtigungen über relevante Tagesordnungspunkte
+Dieser MCP Server agiert als lokale Datenquelle und Kontext-Provider für Client-LLMs. Er soll helfen, öffentliche kommunalpolitische Dokumente auffindbar, zitierbar und analysierbar zu machen.
 
-## 👥 Zielgruppen
+Typische Fragen:
 
-### 1. Stadtverordnete/Fraktionen
-- Kommende Sitzungen und Themen
-- Fraktionsargumente und Positionsfindung
-- Antragsunterstützung
+- Welche Themen kamen in einem Zeitraum vor?
+- Was wurde in Niederschriften zu einem Thema dokumentiert?
+- Welche Evidenzstellen gibt es für Personen, Parteien oder Fraktionen?
+- Welche Sitzungen, Vorlagen und Dokumente gehören zu einem Vorgang?
 
-### 2. Bürger
-- Parteienpositionen zu Themen
-- Historische Entwicklung über Legislaturperioden
-- Politische Transparenz
-
-### 3. Stadtverwaltung
-- Umsetzungsaufgaben aus Beschlüssen
-- Monatsplanung basierend auf Gremienbeschlüssen
-- Verwaltungsplanung
-
-## 🏗️ Architektur
+## Repository-Struktur
 
 ```
 kommunalpolitik-mcp/
 ├── src/
-│   ├── mcp_server.py           # Haupt-MCP Server
+│   ├── ingest/                 # Witzenhausen/SessionNet Ingestion
 │   ├── tools/                  # MCP Tool Implementierungen
-│   ├── providers/              # Datenquellen-Adapter
-│   └── schemas/                # JSON-Schemas
+│   ├── providers/              # OParl Provider (legacy/optional)
+│   ├── schemas/                # JSON-Schemas
+│   └── mcp_server.py           # Haupt-MCP Server
 ├── specs/                      # OParl Spezifikation
-├── .vibe/                      # Entwicklungsplan
+├── CONTRIBUTING.md
+├── LICENSE
 └── requirements.txt
 ```
-
-## 📊 Datenquellen
-
-- **OParl API**: 23+ Kommunen verfügbar (Rees, Gernsheim, Dortmund, etc.)
-- **SessionNet Scraping**: Für Witzenhausen und weitere Städte ohne nutzbare OParl-API
-- **Bestehende Infrastruktur**: Python Scraper bereits vorhanden
 
 ## Witzenhausen SessionNet Ingestion
 
@@ -188,17 +170,9 @@ Hinweise:
 - Die lokalen Daten unter `data/` werden nicht versioniert.
 - Die Heuristiken liefern Evidenzstellen, keine rechtlich/verbindliche politische Bewertung. Zusammenfassungen sollten mit Quellen/Snippets arbeiten.
 
-## Architektur-Richtung
+## Erweiterung auf andere Kommunen
 
-Geplante Richtung:
-
-- Gemeinsame Ingestion-Grundbausteine für HTTP, Caching, Parsing, Persistenz und Textindexierung
-- Adapter für SessionNet, OParl und perspektivisch weitere Ratsinformationssysteme
-- Konfiguration pro Kommune mit eigener Quelle, eigenem Datenverzeichnis und eigener SQLite-Datenbank
-- MCP-Runtime pro Kommune als Standardmodell
-- Optionaler Multi-Kommunen-Betrieb erst später mit expliziter Mandantenfähigkeit
-
-Aktuell sind einige Module noch Witzenhausen-spezifisch benannt. Das ist bewusst akzeptiert, solange nur Witzenhausen unterstützt wird. Die Generalisierung sollte erfolgen, sobald eine zweite Kommune angebunden wird.
+Beiträge für weitere Kommunen sind willkommen. Der Code ist aktuell Witzenhausen-first und noch nicht vollständig abstrahiert. Wenn du eine weitere Kommune anbinden möchtest, lies bitte [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Verantwortliche Nutzung
 
@@ -210,15 +184,7 @@ Die extrahierten Daten können personenbezogene Informationen enthalten, die ber
 
 Wenn du dieses Projekt für deine Kommune adaptieren, in einen lokalen Workflow integrieren oder als gehostete/verwaltete Lösung betreiben möchtest, kontaktiere den Autor. Unterstützung bei neuen Adaptern, Datenqualität, OCR, MCP-Deployment und Integration in bestehende Rechercheprozesse ist möglich.
 
-## 🔧 MCP Tools
-
-### Basis-Tools (MVP)
-- `list_municipalities()` - Verfügbare Städte
-- `get_meetings()` - Sitzungen mit Metadaten
-- `get_meeting_details()` - Vollständige Meeting-Daten
-- `get_protocol_text()` - Protokoll-Volltext
-
-### Witzenhausen-Tools
+## MCP Tools
 
 - `list_witzenhausen_bodies()` - Gremien/Fraktionen auflisten
 - `list_witzenhausen_meetings()` - Sitzungen nach Gremium/Jahr listen
@@ -237,49 +203,12 @@ Use kommunalpolitik to find evidence for SPD topics about Haushalt from 2021 to 
 Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
 ```
 
-### Politik-Tools
-- `get_organizations()` - Fraktionen/Parteien
-- `search_topics_by_keyword()` - Themensuche
-- `get_voting_history()` - Abstimmungsverhalten
-
-### Verwaltungs-Tools
-- `get_decisions_requiring_action()` - Umsetzungsaufgaben
-- `get_meeting_outcomes()` - Beschlüsse für Planung
-
-## 🚀 Usage
-
-### With Amazon Q
-
-1. **Activate virtual environment:**
-   ```bash
-   source venv/bin/activate
-   ```
-
-2. **Start Q with kommunalpolitik agent:**
-   ```bash
-   q chat --agent kommunalpolitik
-   ```
-
-3. **Test the MCP tools:**
-   ```
-   List available German municipalities
-   Show me recent meetings from Dortmund
-   ```
-
-## 🚀 Entwicklungsansatz
-
-**Iterative Entwicklung:**
-1. **MVP**: Witzenhausen SessionNet-Ingestion, lokale SQLite/PDF/Text-Ablage, MCP-Tools
-2. **Iteration 1**: Volltext-Snippet-Suche, Evidenz-Packs, Personen-/Fraktions-Heuristiken
-3. **Iteration 2**: Adapter-Abstraktion für weitere Kommunen und Ratsinformationssysteme
-4. **Iteration 3**: OCR-Fallback, bessere Datenqualität, HTTP/Streamable-MCP-Deployment
-
-## 📋 Status
+## Status
 
 - ✅ Witzenhausen-Ingestion funktionsfähig
 - ✅ Lokale Dokument- und Volltextsuche funktionsfähig
 - ✅ MCP-Tools für Evidenzsuche verfügbar
-- 🔄 Adapter-Abstraktion und weitere Kommunen in Entwicklung
+- 🔄 Adapter-Abstraktion, OCR-Fallback und weitere Kommunen sind mögliche nächste Schritte
 
 ## Lizenz
 
@@ -289,7 +218,7 @@ Dieses Projekt steht unter der Apache License 2.0. Siehe [LICENSE](LICENSE).
 
 Beiträge sind willkommen. Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 🛠️ Technologie
+## Technologie
 
 - **Python** (bestehende Infrastruktur nutzen)
 - **MCP Protocol** für Client-LLM Integration
