@@ -2,22 +2,14 @@
 """
 Kommunalpolitik MCP Server
 
-Ein MCP Server für deutsche Kommunalpolitik mit OParl API Integration.
-Stellt strukturierte Daten für Client-LLMs bereit.
+Lokaler MCP Server für kommunalpolitische Witzenhausen-Daten.
 """
 
 import asyncio
-import logging
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool
 
-from .tools.municipalities import list_municipalities, list_municipalities_tool
-from .tools.meetings import (
-    get_meetings, get_meetings_tool,
-    get_meeting_details, get_meeting_details_tool, 
-    get_protocol_text, get_protocol_text_tool
-)
 from .tools.witzenhausen import (
     get_witzenhausen_document_text,
     get_witzenhausen_document_text_tool,
@@ -37,10 +29,6 @@ from .tools.witzenhausen import (
     search_witzenhausen_text_tool,
 )
 
-# Logging konfigurieren - nur für Debugging, nicht in Produktion
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
-
 # MCP Server erstellen
 server = Server("kommunalpolitik-mcp")
 
@@ -49,10 +37,6 @@ server = Server("kommunalpolitik-mcp")
 async def handle_list_tools() -> list[Tool]:
     """Verfügbare MCP Tools auflisten"""
     return [
-        list_municipalities_tool,
-        get_meetings_tool,
-        get_meeting_details_tool,
-        get_protocol_text_tool,
         list_witzenhausen_bodies_tool,
         list_witzenhausen_meetings_tool,
         get_witzenhausen_meeting_tool,
@@ -69,29 +53,7 @@ async def handle_call_tool(name: str, arguments: dict):
     """MCP Tool aufrufen"""
     
     try:
-        if name == "list_municipalities":
-            return await list_municipalities()
-        
-        elif name == "get_meetings":
-            return await get_meetings(
-                municipality_oparl_url=arguments["municipality_oparl_url"],
-                start_date=arguments.get("start_date"),
-                end_date=arguments.get("end_date"),
-                page=arguments.get("page"),
-                limit=arguments.get("limit")
-            )
-        
-        elif name == "get_meeting_details":
-            return await get_meeting_details(
-                meeting_oparl_url=arguments["meeting_oparl_url"]
-            )
-        
-        elif name == "get_protocol_text":
-            return await get_protocol_text(
-                meeting_oparl_url=arguments["meeting_oparl_url"]
-            )
-
-        elif name == "list_witzenhausen_bodies":
+        if name == "list_witzenhausen_bodies":
             return await list_witzenhausen_bodies(
                 limit=arguments.get("limit", 100)
             )

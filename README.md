@@ -95,10 +95,7 @@ kommunalpolitik-mcp/
 ├── src/
 │   ├── ingest/                 # Witzenhausen/SessionNet Ingestion
 │   ├── tools/                  # MCP Tool Implementierungen
-│   ├── providers/              # OParl Provider (legacy/optional)
-│   ├── schemas/                # JSON-Schemas
 │   └── mcp_server.py           # Haupt-MCP Server
-├── specs/                      # OParl Spezifikation
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── requirements.txt
@@ -222,5 +219,5 @@ Beiträge sind willkommen. Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - **Python** (bestehende Infrastruktur nutzen)
 - **MCP Protocol** für Client-LLM Integration
-- **OParl 1.1** konforme JSON-Schemas
-- **Pydantic** für Datenvalidierung
+- **SQLite FTS5** für lokale Volltextsuche
+- **BeautifulSoup + requests** für öffentliche SessionNet-Seiten
