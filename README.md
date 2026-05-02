@@ -47,7 +47,22 @@ cp mcp_config.example.json mcp_config.json
 npx @modelcontextprotocol/inspector mcp_config.json
 ```
 
-Für OpenCode als globalen lokalen MCP Server:
+Für eine gehostete MCP-Instanz kann OpenCode direkt den Remote-Endpunkt nutzen:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "kommunalpolitik": {
+      "type": "remote",
+      "url": "https://YOUR-HOST/kommunalpolitik/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+Für lokale Entwicklung oder Tests kann OpenCode stattdessen einen lokalen stdio-MCP Server starten:
 
 ```json
 {
