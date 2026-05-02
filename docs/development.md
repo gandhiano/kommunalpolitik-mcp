@@ -40,8 +40,10 @@ For local Witzenhausen data changes or runtime config changes:
 
 For MCP tool changes, run a stdio smoke test or check the configured client can list and call the tools.
 
+For HTTP transport changes, also check `/health` and run a streamable HTTP client smoke test when available.
+
 ## Current Next Milestones
 
 - Config-driven Witzenhausen ingestion via `configs/municipalities/witzenhausen.json`.
 - Python package/CLI setup.
-- Docker and hosted HTTP MCP transport.
+- Docker deployment examples and hosted HTTP MCP transport.
