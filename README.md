@@ -6,48 +6,50 @@ Der aktuelle Stand ist **Witzenhausen-first**. Das öffentliche SessionNet-Bürg
 
 Dieses Projekt ist in aktiver Entwicklung. Nutzung auf eigene Verantwortung.
 
-## Warum nicht einfach OParl?
+## Was kann ich damit fragen?
 
-OParl bleibt sinnvoll, wenn eine Kommune eine offene und vollständige Schnittstelle bereitstellt. In der Praxis fehlen aber oft genau die Dokumente, die für politische Recherche wichtig sind: Sitzungsniederschriften, Tagesordnungs-PDFs, Vorlagen, Anlagen, Änderungsanträge und Bekanntmachungen. Dieses Projekt behandelt OParl daher als eine mögliche Quelle, aber nicht als einzige Ingestion-Strategie.
+Praktische Recherchehilfe für kommunalpolitische Arbeit: schnell herausfinden, was ansteht, was früher dokumentiert wurde und wo die belastbaren Fundstellen sind.
 
-Der Witzenhausen-Adapter zeigt, wie sich die öffentlich verfügbaren SessionNet-Daten konsistent und effizient lokal sammeln, indexieren und über MCP abfragen lassen.
+Beispiele für Fragen an einen MCP-fähigen Agenten:
 
-## Unterstützte Kommunen
-
-| Kommune | Quelle | Status |
-| --- | --- | --- |
-| Witzenhausen | Öffentliches SessionNet-Bürgerinfoportal | Unterstützt und lokal getestet |
-
-Weitere Kommunen sind willkommen. Neue Kommunen sollten als Adapter/Konfiguration ergänzt werden, nicht durch Vermischung mit Witzenhausen-spezifischer Logik.
-
-## Betriebsmodell
-
-Empfohlen ist zunächst **eine lokale Datenbank und ein MCP-Runtime pro Kommune**.
-
-Das hält Suchergebnisse sauber auf eine Kommune begrenzt, reduziert versehentliche Vermischung und erleichtert Updates. Ein Multi-Kommunen-Betrieb ist denkbar, aber noch nicht Ziel der aktuellen Implementierung.
-
-## Schnellstart
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-kommunalpolitik ingest witzenhausen init-db
-kommunalpolitik ingest witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2024 --to-year 2026
-kommunalpolitik ingest witzenhausen status
+```text
+Was steht in der nächsten Stadtverordnetenversammlung an? Gibt es schon eine Tagesordnung und Unterlagen?
 ```
 
-Die Witzenhausen-Defaults liegen in `configs/municipalities/witzenhausen.json`. Andere Pfade oder spätere Kommunen können über `--config` ausgewählt werden.
-
-Danach den MCP Server lokal testen:
-
-```bash
-cp mcp_config.example.json mcp_config.json
-# mcp_config.json: absolute Pfade anpassen
-npx @modelcontextprotocol/inspector mcp_config.json
+```text
+Erstelle mir eine kurze Briefing-Notiz für die nächste Sitzung: wichtigste TOPs, relevante Dokumente und mögliche Rückfragen.
 ```
 
-Für OpenCode als globalen lokalen MCP Server:
+```text
+Welche Beschlüsse oder Diskussionen gab es seit 2021 zum Haushalt? Bitte mit Sitzungsdatum und Quellenstellen.
+```
+
+```text
+Welche Anträge oder Wortbeiträge der Grünen zum Thema Verkehr finde ich in den Niederschriften?
+```
+
+```text
+Gibt es Hinweise, dass dieses Thema schon einmal behandelt wurde, bevor wir einen neuen Antrag formulieren?
+```
+
+## Nutzung
+
+Wenn eine gehostete Instanz betrieben wird, kann OpenCode direkt den Remote-MCP-Endpunkt nutzen:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "kommunalpolitik": {
+      "type": "remote",
+      "url": "https://YOUR-HOST/kommunalpolitik/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+Für lokale Entwicklung oder Tests kann OpenCode stattdessen einen lokalen stdio-MCP Server starten:
 
 ```json
 {
@@ -69,6 +71,43 @@ Für OpenCode als globalen lokalen MCP Server:
 }
 ```
 
+## Warum nicht einfach OParl?
+
+OParl bleibt sinnvoll, wenn eine Kommune eine offene und vollständige Schnittstelle bereitstellt. In der Praxis fehlen aber oft genau die Dokumente, die für politische Recherche wichtig sind: Niederschriften, Tagesordnungs-PDFs, Vorlagen, Anlagen und Anträge. Dieses Projekt behandelt OParl daher als eine mögliche Quelle, aber nicht als einzige Ingestion-Strategie.
+
+## Unterstützte Kommunen
+
+| Kommune | Quelle | Status |
+| --- | --- | --- |
+| Witzenhausen | Öffentliches SessionNet-Bürgerinfoportal | Unterstützt und lokal getestet |
+
+Weitere Kommunen sind willkommen. Hinweise dazu stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Betriebsmodell
+
+Empfohlen ist zunächst **eine Datenbank und eine MCP-Runtime pro Kommune**. Das hält Suchergebnisse sauber begrenzt und erleichtert Updates.
+
+## Lokaler Schnellstart
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+kommunalpolitik ingest witzenhausen init-db
+kommunalpolitik ingest witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2024 --to-year 2026
+kommunalpolitik ingest witzenhausen status
+```
+
+Die Witzenhausen-Defaults liegen in `configs/municipalities/witzenhausen.json`. Andere Pfade oder spätere Kommunen können über `--config` ausgewählt werden.
+
+Danach den MCP Server lokal testen:
+
+```bash
+cp mcp_config.example.json mcp_config.json
+# mcp_config.json: absolute Pfade anpassen
+npx @modelcontextprotocol/inspector mcp_config.json
+```
+
 Für HTTP-/Server-Deployments steht zusätzlich ein Streamable-HTTP-Transport bereit:
 
 ```bash
@@ -76,27 +115,6 @@ kommunalpolitik http --host 0.0.0.0 --port 8000
 ```
 
 Der MCP-Endpunkt liegt dann unter `/mcp`, ein einfacher Healthcheck unter `/health`.
-
-Beispielfragen in OpenCode:
-
-```text
-Use kommunalpolitik to search Witzenhausen text for Haushalt from 2021 to 2026, limited to minutes.
-```
-
-```text
-Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
-```
-
-## Ziel
-
-Dieser MCP Server agiert als lokale Datenquelle und Kontext-Provider für Client-LLMs. Er soll helfen, öffentliche kommunalpolitische Dokumente auffindbar, zitierbar und analysierbar zu machen.
-
-Typische Fragen:
-
-- Welche Themen kamen in einem Zeitraum vor?
-- Was wurde in Niederschriften zu einem Thema dokumentiert?
-- Welche Evidenzstellen gibt es für Personen, Parteien oder Fraktionen?
-- Welche Sitzungen, Vorlagen und Dokumente gehören zu einem Vorgang?
 
 ## Repository-Struktur
 
@@ -182,10 +200,6 @@ Hinweise:
 - Die lokalen Daten unter `data/` werden nicht versioniert.
 - Die Heuristiken liefern Evidenzstellen, keine rechtlich/verbindliche politische Bewertung. Zusammenfassungen sollten mit Quellen/Snippets arbeiten.
 
-## Erweiterung auf andere Kommunen
-
-Beiträge für weitere Kommunen sind willkommen. Der Code ist aktuell Witzenhausen-first und noch nicht vollständig abstrahiert. Wenn du eine weitere Kommune anbinden möchtest, lies bitte [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Verantwortliche Nutzung
 
 Dieses Projekt zielt ausschließlich auf öffentliche Informationen. Verwende es nicht, um Login-Bereiche abzufragen, Zugriffskontrollen zu umgehen oder nicht-öffentliche/private Daten zu sammeln. Betreiberinnen und Betreiber sind selbst dafür verantwortlich, geltendes Recht, lokale Nutzungsbedingungen, `robots.txt`-Hinweise, Rate-Limits und Datenschutzanforderungen einzuhalten.
@@ -206,16 +220,6 @@ Wenn du dieses Projekt für deine Kommune adaptieren, in einen lokalen Workflow 
 - `search_text()` - Volltext-Snippet-Suche mit Datum/Gremium/Dokumenttyp-Filtern
 - `find_actor_topics()` - Evidenzstellen für Person, Partei oder Fraktion suchen
 - `get_evidence_pack()` - Evidenzstellen gruppiert für Zusammenfassungen abrufen
-
-Beispiele für Agent/LLM-Fragen:
-
-```text
-Use kommunalpolitik to find evidence for SPD topics about Haushalt from 2021 to 2026 in Witzenhausen minutes.
-```
-
-```text
-Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
-```
 
 ## Status
 

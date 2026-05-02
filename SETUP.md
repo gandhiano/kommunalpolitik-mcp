@@ -33,9 +33,36 @@ cp mcp_config.example.json mcp_config.json
 npx @modelcontextprotocol/inspector mcp_config.json
 ```
 
-## 3. MCP lokal verwenden
+## 3. MCP verwenden
 
-Der MCP Server läuft über `stdio`. Clients wie OpenCode, Claude Desktop oder der MCP Inspector starten ihn über eine Config:
+Für eine gehostete MCP-Instanz kann OpenCode direkt den Remote-Endpunkt nutzen:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "kommunalpolitik": {
+      "type": "remote",
+      "url": "https://YOUR-HOST/kommunalpolitik/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+Beispiele für Fragen:
+
+```text
+Was steht in der nächsten Stadtverordnetenversammlung an? Gibt es schon eine Tagesordnung und Unterlagen?
+```
+
+```text
+Welche Beschlüsse oder Diskussionen gab es seit 2021 zum Haushalt? Bitte mit Sitzungsdatum und Quellenstellen.
+```
+
+Für lokale Entwicklung oder Tests läuft der MCP Server über `stdio`. Clients wie OpenCode, Claude Desktop oder der MCP Inspector starten ihn über eine Config:
+
+Lokale stdio-Config:
 
 ```json
 {
@@ -69,7 +96,7 @@ MCP Tools:
 - `find_actor_topics`
 - `get_evidence_pack`
 
-ChatGPT Custom Connectors benötigen einen öffentlich erreichbaren HTTP/SSE bzw. Streamable-HTTP MCP Server. Diese lokale `stdio`-Config reicht für OpenCode/Claude Desktop/Inspector, aber nicht direkt für ChatGPT. Dafür braucht es später einen kleinen HTTP-Transport oder Deployment.
+ChatGPT Custom Connectors benötigen einen öffentlich erreichbaren Streamable-HTTP MCP Server. Eine lokale `stdio`-Config reicht für OpenCode/Claude Desktop/Inspector, aber nicht direkt für ChatGPT.
 
 Für Server-Deployments kann der Streamable-HTTP-Transport gestartet werden:
 
