@@ -57,10 +57,6 @@ Was steht in der nächsten Stadtverordnetenversammlung an? Gibt es schon eine Ta
 ```
 
 ```text
-Erstelle mir eine kurze Briefing-Notiz für die nächste Sitzung: wichtigste TOPs, relevante Dokumente und mögliche Rückfragen.
-```
-
-```text
 Welche Beschlüsse oder Diskussionen gab es seit 2021 zum Haushalt? Bitte mit Sitzungsdatum und Quellenstellen.
 ```
 

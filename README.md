@@ -8,16 +8,12 @@ Dieses Projekt ist in aktiver Entwicklung. Nutzung auf eigene Verantwortung.
 
 ## Was kann ich damit fragen?
 
-Das Ziel ist praktische Recherchehilfe für kommunalpolitische Arbeit: schnell herausfinden, was ansteht, was früher dokumentiert wurde und wo die belastbaren Fundstellen sind.
+Praktische Recherchehilfe für kommunalpolitische Arbeit: schnell herausfinden, was ansteht, was früher dokumentiert wurde und wo die belastbaren Fundstellen sind.
 
 Beispiele für Fragen an einen MCP-fähigen Agenten:
 
 ```text
 Was steht in der nächsten Stadtverordnetenversammlung an? Gibt es schon eine Tagesordnung und Unterlagen?
-```
-
-```text
-Fasse mir die nächste Stavo nach Themen zusammen und markiere Punkte, die für die Grüne Fraktion relevant sein könnten.
 ```
 
 ```text
@@ -29,27 +25,11 @@ Welche Beschlüsse oder Diskussionen gab es seit 2021 zum Haushalt? Bitte mit Si
 ```
 
 ```text
-Was wurde in den letzten Jahren zum Thema Kita-Gebühren dokumentiert?
-```
-
-```text
 Welche Anträge oder Wortbeiträge der Grünen zum Thema Verkehr finde ich in den Niederschriften?
 ```
 
 ```text
 Gibt es Hinweise, dass dieses Thema schon einmal behandelt wurde, bevor wir einen neuen Antrag formulieren?
-```
-
-```text
-Suche nach "Windkraft" in Niederschriften und Vorlagen und fasse die wichtigsten Fundstellen chronologisch zusammen.
-```
-
-```text
-Welche offenen oder wiederkehrenden Themen tauchen in den letzten Sitzungen des Bauausschusses auf?
-```
-
-```text
-Welche Personen, Fraktionen oder Gremien wurden im Zusammenhang mit "Innenstadt" erwähnt?
 ```
 
 ## Nutzung
@@ -93,9 +73,7 @@ Für lokale Entwicklung oder Tests kann OpenCode stattdessen einen lokalen stdio
 
 ## Warum nicht einfach OParl?
 
-OParl bleibt sinnvoll, wenn eine Kommune eine offene und vollständige Schnittstelle bereitstellt. In der Praxis fehlen aber oft genau die Dokumente, die für politische Recherche wichtig sind: Sitzungsniederschriften, Tagesordnungs-PDFs, Vorlagen, Anlagen, Änderungsanträge und Bekanntmachungen. Dieses Projekt behandelt OParl daher als eine mögliche Quelle, aber nicht als einzige Ingestion-Strategie.
-
-Der Witzenhausen-Adapter zeigt, wie sich die öffentlich verfügbaren SessionNet-Daten konsistent und effizient lokal sammeln, indexieren und über MCP abfragen lassen.
+OParl bleibt sinnvoll, wenn eine Kommune eine offene und vollständige Schnittstelle bereitstellt. In der Praxis fehlen aber oft genau die Dokumente, die für politische Recherche wichtig sind: Niederschriften, Tagesordnungs-PDFs, Vorlagen, Anlagen und Anträge. Dieses Projekt behandelt OParl daher als eine mögliche Quelle, aber nicht als einzige Ingestion-Strategie.
 
 ## Unterstützte Kommunen
 
@@ -103,13 +81,11 @@ Der Witzenhausen-Adapter zeigt, wie sich die öffentlich verfügbaren SessionNet
 | --- | --- | --- |
 | Witzenhausen | Öffentliches SessionNet-Bürgerinfoportal | Unterstützt und lokal getestet |
 
-Weitere Kommunen sind willkommen. Neue Kommunen sollten als Adapter/Konfiguration ergänzt werden, nicht durch Vermischung mit Witzenhausen-spezifischer Logik.
+Weitere Kommunen sind willkommen. Hinweise dazu stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Betriebsmodell
 
-Empfohlen ist zunächst **eine lokale Datenbank und ein MCP-Runtime pro Kommune**.
-
-Das hält Suchergebnisse sauber auf eine Kommune begrenzt, reduziert versehentliche Vermischung und erleichtert Updates. Ein Multi-Kommunen-Betrieb ist denkbar, aber noch nicht Ziel der aktuellen Implementierung.
+Empfohlen ist zunächst **eine Datenbank und eine MCP-Runtime pro Kommune**. Das hält Suchergebnisse sauber begrenzt und erleichtert Updates.
 
 ## Lokaler Schnellstart
 
@@ -139,17 +115,6 @@ kommunalpolitik http --host 0.0.0.0 --port 8000
 ```
 
 Der MCP-Endpunkt liegt dann unter `/mcp`, ein einfacher Healthcheck unter `/health`.
-
-## Ziel
-
-Dieser MCP Server agiert als lokale Datenquelle und Kontext-Provider für Client-LLMs. Er soll helfen, öffentliche kommunalpolitische Dokumente auffindbar, zitierbar und analysierbar zu machen.
-
-Typische Fragen:
-
-- Welche Themen kamen in einem Zeitraum vor?
-- Was wurde in Niederschriften zu einem Thema dokumentiert?
-- Welche Evidenzstellen gibt es für Personen, Parteien oder Fraktionen?
-- Welche Sitzungen, Vorlagen und Dokumente gehören zu einem Vorgang?
 
 ## Repository-Struktur
 
@@ -234,10 +199,6 @@ Hinweise:
 - Für Analysefragen gibt es zusätzlich einen lokalen FTS-Index über Text-Chunks und heuristische Actor-Mentions für Personen, Parteien und Fraktionen.
 - Die lokalen Daten unter `data/` werden nicht versioniert.
 - Die Heuristiken liefern Evidenzstellen, keine rechtlich/verbindliche politische Bewertung. Zusammenfassungen sollten mit Quellen/Snippets arbeiten.
-
-## Erweiterung auf andere Kommunen
-
-Beiträge für weitere Kommunen sind willkommen. Der Code ist aktuell Witzenhausen-first und noch nicht vollständig abstrahiert. Wenn du eine weitere Kommune anbinden möchtest, lies bitte [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Verantwortliche Nutzung
 
