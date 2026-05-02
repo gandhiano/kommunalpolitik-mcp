@@ -21,14 +21,20 @@ from .tools.meetings import (
 from .tools.witzenhausen import (
     get_witzenhausen_document_text,
     get_witzenhausen_document_text_tool,
+    get_witzenhausen_evidence_pack,
+    get_witzenhausen_evidence_pack_tool,
     get_witzenhausen_meeting,
     get_witzenhausen_meeting_tool,
+    find_witzenhausen_actor_topics,
+    find_witzenhausen_actor_topics_tool,
     list_witzenhausen_bodies,
     list_witzenhausen_bodies_tool,
     list_witzenhausen_meetings,
     list_witzenhausen_meetings_tool,
     search_witzenhausen_documents,
     search_witzenhausen_documents_tool,
+    search_witzenhausen_text,
+    search_witzenhausen_text_tool,
 )
 
 # Logging konfigurieren - nur für Debugging, nicht in Produktion
@@ -52,6 +58,9 @@ async def handle_list_tools() -> list[Tool]:
         get_witzenhausen_meeting_tool,
         search_witzenhausen_documents_tool,
         get_witzenhausen_document_text_tool,
+        search_witzenhausen_text_tool,
+        find_witzenhausen_actor_topics_tool,
+        get_witzenhausen_evidence_pack_tool,
     ]
 
 
@@ -109,6 +118,39 @@ async def handle_call_tool(name: str, arguments: dict):
         elif name == "get_witzenhausen_document_text":
             return await get_witzenhausen_document_text(
                 document_id=arguments["document_id"]
+            )
+
+        elif name == "search_witzenhausen_text":
+            return await search_witzenhausen_text(
+                query=arguments["query"],
+                from_date=arguments.get("from_date"),
+                to_date=arguments.get("to_date"),
+                body=arguments.get("body"),
+                document_type=arguments.get("document_type"),
+                limit=arguments.get("limit", 20)
+            )
+
+        elif name == "find_witzenhausen_actor_topics":
+            return await find_witzenhausen_actor_topics(
+                actor=arguments["actor"],
+                topic=arguments.get("topic"),
+                actor_type=arguments.get("actor_type"),
+                from_date=arguments.get("from_date"),
+                to_date=arguments.get("to_date"),
+                body=arguments.get("body"),
+                document_type=arguments.get("document_type", "minutes"),
+                confidence=arguments.get("confidence"),
+                limit=arguments.get("limit", 30)
+            )
+
+        elif name == "get_witzenhausen_evidence_pack":
+            return await get_witzenhausen_evidence_pack(
+                actor=arguments.get("actor"),
+                topic=arguments.get("topic"),
+                from_date=arguments.get("from_date"),
+                to_date=arguments.get("to_date"),
+                body=arguments.get("body"),
+                limit=arguments.get("limit", 50)
             )
         
         else:

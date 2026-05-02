@@ -71,6 +71,10 @@ python -m src.ingest.witzenhausen --allow-public-crawl details --limit 25
 python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 25
 python -m src.ingest.witzenhausen extract-text --limit 25
 
+# Volltext in Such-Snippets aufteilen und Personen/Fraktionen heuristisch erkennen
+python -m src.ingest.witzenhausen index-chunks
+python -m src.ingest.witzenhausen extract-actors
+
 # Status anzeigen
 python -m src.ingest.witzenhausen status
 ```
@@ -91,6 +95,7 @@ Hinweise:
 - Live-Requests sind bewusst opt-in über `--allow-public-crawl`.
 - HTML wird lokal gecacht, PDFs werden nur einmal heruntergeladen.
 - Dokumente mit `NS`, `Niederschrift` oder `Protokoll` werden als `minutes` klassifiziert.
+- Für Analysefragen gibt es zusätzlich einen lokalen FTS-Index über Text-Chunks und heuristische Actor-Mentions für Personen, Parteien und Fraktionen.
 
 ## 🔧 MCP Tools
 
@@ -99,6 +104,25 @@ Hinweise:
 - `get_meetings()` - Sitzungen mit Metadaten
 - `get_meeting_details()` - Vollständige Meeting-Daten
 - `get_protocol_text()` - Protokoll-Volltext
+
+### Witzenhausen-Tools
+
+- `list_witzenhausen_bodies()` - Gremien/Fraktionen auflisten
+- `list_witzenhausen_meetings()` - Sitzungen nach Gremium/Jahr listen
+- `get_witzenhausen_meeting()` - Sitzung mit Tagesordnung und Dokumenten abrufen
+- `search_witzenhausen_text()` - Volltext-Snippet-Suche mit Datum/Gremium/Dokumenttyp-Filtern
+- `find_witzenhausen_actor_topics()` - Evidenzstellen für Person, Partei oder Fraktion suchen
+- `get_witzenhausen_evidence_pack()` - Evidenzstellen gruppiert für Zusammenfassungen abrufen
+
+Beispiele für Agent/LLM-Fragen:
+
+```text
+Use kommunalpolitik to find evidence for SPD topics about Haushalt from 2021 to 2026 in Witzenhausen minutes.
+```
+
+```text
+Use kommunalpolitik to get an evidence pack for Grüne and Haushalt from 2021 to 2026, then summarize by topic with citations.
+```
 
 ### Politik-Tools
 - `get_organizations()` - Fraktionen/Parteien

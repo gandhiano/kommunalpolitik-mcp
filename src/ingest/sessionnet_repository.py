@@ -96,6 +96,50 @@ class SessionNetRepository:
                 value TEXT,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                source_type TEXT,
+                source_id TEXT,
+                document_type TEXT,
+                document_name TEXT,
+                body_name TEXT,
+                meeting_date TEXT,
+                page_number INTEGER,
+                chunk_index INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE VIRTUAL TABLE IF NOT EXISTS document_chunks_fts USING fts5(
+                text,
+                document_id UNINDEXED,
+                chunk_id UNINDEXED
+            );
+
+            CREATE TABLE IF NOT EXISTS actor_mentions (
+                id TEXT PRIMARY KEY,
+                actor_name TEXT NOT NULL,
+                actor_type TEXT NOT NULL,
+                verb TEXT,
+                confidence TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                chunk_id TEXT NOT NULL,
+                source_type TEXT,
+                source_id TEXT,
+                document_type TEXT,
+                document_name TEXT,
+                body_name TEXT,
+                meeting_date TEXT,
+                snippet TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_document_chunks_document_id ON document_chunks(document_id);
+            CREATE INDEX IF NOT EXISTS idx_document_chunks_meeting_date ON document_chunks(meeting_date);
+            CREATE INDEX IF NOT EXISTS idx_actor_mentions_actor ON actor_mentions(actor_name, actor_type);
+            CREATE INDEX IF NOT EXISTS idx_actor_mentions_date ON actor_mentions(meeting_date);
             """
         )
         self.connection.commit()
@@ -259,8 +303,109 @@ class SessionNetRepository:
         return list(self.connection.execute(sql, params))
 
     def counts(self) -> dict[str, int]:
-        tables = ["bodies", "meetings", "agenda_items", "papers", "documents", "document_text"]
+        tables = [
+            "bodies",
+            "meetings",
+            "agenda_items",
+            "papers",
+            "documents",
+            "document_text",
+            "document_chunks",
+            "actor_mentions",
+        ]
         return {
             table: self.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             for table in tables
         }
+
+    def documents_pending_chunks(self, limit: int | None = None) -> list[sqlite3.Row]:
+        sql = """
+            SELECT
+                d.id,
+                d.source_type,
+                d.source_id,
+                d.document_type,
+                d.name AS document_name,
+                m.body_name,
+                m.meeting_date,
+                t.text
+            FROM documents d
+            JOIN document_text t ON t.document_id = d.id
+            LEFT JOIN meetings m ON d.source_type = 'meeting' AND d.source_id = m.id
+            LEFT JOIN document_chunks c ON c.document_id = d.id
+            WHERE c.id IS NULL AND t.text IS NOT NULL AND length(t.text) > 0
+            ORDER BY d.id
+        """
+        params: tuple[Any, ...] = ()
+        if limit:
+            sql += " LIMIT ?"
+            params = (limit,)
+        return list(self.connection.execute(sql, params))
+
+    def save_document_chunks(self, document_id: str, chunks: Iterable[dict[str, Any]], rebuild: bool = False) -> int:
+        rows = list(chunks)
+        if rebuild:
+            existing = self.connection.execute(
+                "SELECT id FROM document_chunks WHERE document_id = ?",
+                (document_id,),
+            ).fetchall()
+            for row in existing:
+                self.connection.execute("DELETE FROM document_chunks_fts WHERE chunk_id = ?", (row["id"],))
+            self.connection.execute("DELETE FROM actor_mentions WHERE document_id = ?", (document_id,))
+            self.connection.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
+
+        self.connection.executemany(
+            """
+            INSERT INTO document_chunks (
+                id, document_id, source_type, source_id, document_type, document_name,
+                body_name, meeting_date, page_number, chunk_index, text
+            ) VALUES (
+                :id, :document_id, :source_type, :source_id, :document_type, :document_name,
+                :body_name, :meeting_date, :page_number, :chunk_index, :text
+            )
+            ON CONFLICT(id) DO UPDATE SET
+                text = excluded.text,
+                page_number = excluded.page_number,
+                chunk_index = excluded.chunk_index
+            """,
+            rows,
+        )
+        self.connection.executemany(
+            """
+            INSERT INTO document_chunks_fts (text, document_id, chunk_id)
+            VALUES (:text, :document_id, :id)
+            """,
+            rows,
+        )
+        self.connection.commit()
+        return len(rows)
+
+    def chunks_pending_actor_mentions(self, limit: int | None = None) -> list[sqlite3.Row]:
+        sql = """
+            SELECT c.* FROM document_chunks c
+            LEFT JOIN actor_mentions a ON a.chunk_id = c.id
+            WHERE a.id IS NULL
+            ORDER BY c.document_id, c.chunk_index
+        """
+        params: tuple[Any, ...] = ()
+        if limit:
+            sql += " LIMIT ?"
+            params = (limit,)
+        return list(self.connection.execute(sql, params))
+
+    def save_actor_mentions(self, mentions: Iterable[dict[str, Any]]) -> int:
+        rows = list(mentions)
+        self.connection.executemany(
+            """
+            INSERT OR IGNORE INTO actor_mentions (
+                id, actor_name, actor_type, verb, confidence, document_id, chunk_id,
+                source_type, source_id, document_type, document_name, body_name, meeting_date, snippet
+            ) VALUES (
+                :id, :actor_name, :actor_type, :verb, :confidence, :document_id, :chunk_id,
+                :source_type, :source_id, :document_type, :document_name, :body_name, :meeting_date, :snippet
+            )
+            """,
+            rows,
+        )
+        self.connection.commit()
+        return len(rows)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -182,6 +183,192 @@ async def get_witzenhausen_document_text(document_id: str) -> list[TextContent]:
     return _content({"document": _row_to_dict(row)})
 
 
+async def search_witzenhausen_text(
+    query: str,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    body: str | None = None,
+    document_type: str | None = None,
+    limit: int = 20,
+) -> list[TextContent]:
+    """Search chunked full text with date/body/type filters and compact snippets."""
+    clauses = ["document_chunks_fts MATCH ?"]
+    params: list[Any] = [_fts_query(query)]
+    if from_date:
+        clauses.append("c.meeting_date >= ?")
+        params.append(from_date)
+    if to_date:
+        clauses.append("c.meeting_date <= ?")
+        params.append(to_date)
+    if body:
+        clauses.append("c.body_name LIKE ?")
+        params.append(f"%{body}%")
+    if document_type:
+        clauses.append("c.document_type = ?")
+        params.append(document_type)
+    params.append(limit)
+
+    with _connect() as connection:
+        rows = connection.execute(
+            f"""
+            SELECT
+                c.id AS chunk_id,
+                c.document_id,
+                c.document_type,
+                c.document_name,
+                c.source_type,
+                c.source_id,
+                c.body_name,
+                c.meeting_date,
+                c.page_number,
+                d.url,
+                substr(c.text, 1, 1200) AS snippet,
+                bm25(document_chunks_fts) AS rank
+            FROM document_chunks_fts
+            JOIN document_chunks c ON c.id = document_chunks_fts.chunk_id
+            JOIN documents d ON d.id = c.document_id
+            WHERE {' AND '.join(clauses)}
+            ORDER BY rank
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    return _content({"query": query, "results": [_row_to_dict(row) for row in rows], "total": len(rows)})
+
+
+async def find_witzenhausen_actor_topics(
+    actor: str,
+    topic: str | None = None,
+    actor_type: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    body: str | None = None,
+    document_type: str | None = "minutes",
+    confidence: str | None = None,
+    limit: int = 30,
+) -> list[TextContent]:
+    """Find evidence snippets for a person, party, or faction over a period."""
+    clauses = ["a.actor_name LIKE ?"]
+    params: list[Any] = [f"%{actor}%"]
+    if actor_type:
+        clauses.append("a.actor_type = ?")
+        params.append(actor_type)
+    if from_date:
+        clauses.append("a.meeting_date >= ?")
+        params.append(from_date)
+    if to_date:
+        clauses.append("a.meeting_date <= ?")
+        params.append(to_date)
+    if body:
+        clauses.append("a.body_name LIKE ?")
+        params.append(f"%{body}%")
+    if document_type:
+        clauses.append("a.document_type = ?")
+        params.append(document_type)
+    if confidence:
+        clauses.append("a.confidence = ?")
+        params.append(confidence)
+    if topic:
+        clauses.append("a.snippet LIKE ?")
+        params.append(f"%{topic}%")
+    params.append(limit)
+
+    with _connect() as connection:
+        rows = connection.execute(
+            f"""
+            SELECT
+                a.actor_name,
+                a.actor_type,
+                a.verb,
+                a.confidence,
+                a.document_id,
+                a.chunk_id,
+                a.document_type,
+                a.document_name,
+                a.body_name,
+                a.meeting_date,
+                a.source_type,
+                a.source_id,
+                d.url,
+                a.snippet
+            FROM actor_mentions a
+            JOIN document_chunks c ON c.id = a.chunk_id
+            JOIN documents d ON d.id = a.document_id
+            WHERE {' AND '.join(clauses)}
+            ORDER BY
+                CASE a.confidence WHEN 'strong' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                a.meeting_date DESC,
+                a.document_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+
+    return _content(
+        {
+            "actor": actor,
+            "topic": topic,
+            "note": "strong means an action verb was detected near the actor; weak means a nearby mention only.",
+            "results": [_row_to_dict(row) for row in rows],
+            "total": len(rows),
+        }
+    )
+
+
+async def get_witzenhausen_evidence_pack(
+    actor: str | None = None,
+    topic: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    body: str | None = None,
+    limit: int = 50,
+) -> list[TextContent]:
+    """Return grouped evidence for summarization by meeting and document."""
+    if actor:
+        actor_result = await find_witzenhausen_actor_topics(
+            actor=actor,
+            topic=topic,
+            from_date=from_date,
+            to_date=to_date,
+            body=body,
+            document_type="minutes",
+            limit=limit,
+        )
+        payload = json.loads(actor_result[0].text)
+        rows = payload["results"]
+    elif topic:
+        topic_result = await search_witzenhausen_text(
+            query=topic,
+            from_date=from_date,
+            to_date=to_date,
+            body=body,
+            document_type="minutes",
+            limit=limit,
+        )
+        payload = json.loads(topic_result[0].text)
+        rows = payload["results"]
+    else:
+        return _content({"error": "Provide actor or topic"})
+
+    grouped: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = f"{row.get('meeting_date')}|{row.get('body_name')}|{row.get('document_id')}"
+        group = grouped.setdefault(
+            key,
+            {
+                "meeting_date": row.get("meeting_date"),
+                "body_name": row.get("body_name"),
+                "document_id": row.get("document_id"),
+                "document_name": row.get("document_name"),
+                "source_url": row.get("url"),
+                "snippets": [],
+            },
+        )
+        group["snippets"].append(row.get("snippet"))
+
+    return _content({"actor": actor, "topic": topic, "groups": list(grouped.values()), "total_groups": len(grouped)})
+
+
 list_witzenhausen_bodies_tool = Tool(
     name="list_witzenhausen_bodies",
     description="List locally ingested Witzenhausen committees/bodies from SessionNet",
@@ -242,3 +429,64 @@ get_witzenhausen_document_text_tool = Tool(
         "required": ["document_id"],
     },
 )
+
+search_witzenhausen_text_tool = Tool(
+    name="search_witzenhausen_text",
+    description="Search chunked Witzenhausen full text with snippets and filters",
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "Full-text query"},
+            "from_date": {"type": "string", "description": "Start date YYYY-MM-DD"},
+            "to_date": {"type": "string", "description": "End date YYYY-MM-DD"},
+            "body": {"type": "string", "description": "Body/committee name contains"},
+            "document_type": {"type": "string", "description": "minutes, notice, paper, motion, attachment, other"},
+            "limit": {"type": "integer", "description": "Maximum number of snippets"},
+        },
+        "required": ["query"],
+    },
+)
+
+find_witzenhausen_actor_topics_tool = Tool(
+    name="find_witzenhausen_actor_topics",
+    description="Find evidence snippets for a person, party, or faction in Witzenhausen minutes/documents",
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "actor": {"type": "string", "description": "Person, party, or faction name"},
+            "topic": {"type": "string", "description": "Optional topic keyword"},
+            "actor_type": {"type": "string", "description": "person, party, or faction"},
+            "from_date": {"type": "string", "description": "Start date YYYY-MM-DD"},
+            "to_date": {"type": "string", "description": "End date YYYY-MM-DD"},
+            "body": {"type": "string", "description": "Body/committee name contains"},
+            "document_type": {"type": "string", "description": "Defaults to minutes"},
+            "confidence": {"type": "string", "description": "strong or weak"},
+            "limit": {"type": "integer", "description": "Maximum number of snippets"},
+        },
+        "required": ["actor"],
+    },
+)
+
+get_witzenhausen_evidence_pack_tool = Tool(
+    name="get_witzenhausen_evidence_pack",
+    description="Return grouped Witzenhausen evidence snippets for summarization by actor/topic/date range",
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "actor": {"type": "string", "description": "Optional person, party, or faction"},
+            "topic": {"type": "string", "description": "Optional topic keyword"},
+            "from_date": {"type": "string", "description": "Start date YYYY-MM-DD"},
+            "to_date": {"type": "string", "description": "End date YYYY-MM-DD"},
+            "body": {"type": "string", "description": "Body/committee name contains"},
+            "limit": {"type": "integer", "description": "Maximum number of snippets before grouping"},
+        },
+        "required": [],
+    },
+)
+
+
+def _fts_query(query: str) -> str:
+    terms = re.findall(r"[\wÄÖÜäöüß-]+", query)
+    if not terms:
+        return f'"{query.replace(chr(34), "")}"'
+    return " ".join(f'"{term}"' for term in terms)

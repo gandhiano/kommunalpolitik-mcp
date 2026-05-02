@@ -84,7 +84,19 @@ python -m src.ingest.witzenhausen init-db
 python -m src.ingest.witzenhausen --allow-public-crawl bodies
 python -m src.ingest.witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
 python -m src.ingest.witzenhausen --allow-public-crawl details --limit 25
+python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 25
+python -m src.ingest.witzenhausen extract-text --limit 25
+python -m src.ingest.witzenhausen index-chunks
+python -m src.ingest.witzenhausen extract-actors
 python -m src.ingest.witzenhausen status
 ```
 
 Die Daten liegen danach lokal unter `data/witzenhausen/`. PDFs und extrahierte Texte werden ebenfalls dort gespeichert.
+
+Für eine vollständige lokale Datenbank inklusive Volltext- und Actor-Index:
+
+```bash
+python -m src.ingest.witzenhausen --allow-public-crawl --delay 0.5 sync --from-year 2000 --to-year 2026
+```
+
+Die Analyse-Tools basieren auf heuristischen Treffern. `strong` bedeutet, dass ein Handlungsverb wie `beantragt`, `fragt`, `bittet`, `kritisiert` oder `berichtet` nahe an der Person/Fraktion erkannt wurde. `weak` bedeutet nur eine Erwähnung in der Nähe des Snippets.

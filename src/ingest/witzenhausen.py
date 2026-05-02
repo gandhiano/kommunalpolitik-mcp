@@ -19,6 +19,7 @@ from .sessionnet_parsers import (
     parse_paper_detail,
 )
 from .sessionnet_repository import SessionNetRepository
+from .text_index import chunk_document, extract_actor_mentions
 
 
 DEFAULT_DATA_DIR = Path("data/witzenhausen")
@@ -57,6 +58,13 @@ def main() -> None:
     text = subparsers.add_parser("extract-text")
     text.add_argument("--limit", type=int)
 
+    chunks = subparsers.add_parser("index-chunks")
+    chunks.add_argument("--limit", type=int)
+    chunks.add_argument("--rebuild", action="store_true")
+
+    actors = subparsers.add_parser("extract-actors")
+    actors.add_argument("--limit", type=int)
+
     subparsers.add_parser("status")
 
     sync = subparsers.add_parser("sync")
@@ -92,6 +100,10 @@ def main() -> None:
             print(json.dumps(command_documents(repo, client, args.data_dir, args.limit, args.force), indent=2, ensure_ascii=False))
         elif args.command == "extract-text":
             print(json.dumps(command_extract_text(repo, args.data_dir, args.limit), indent=2, ensure_ascii=False))
+        elif args.command == "index-chunks":
+            print(json.dumps(command_index_chunks(repo, args.limit, args.rebuild), indent=2, ensure_ascii=False))
+        elif args.command == "extract-actors":
+            print(json.dumps(command_extract_actors(repo, args.limit), indent=2, ensure_ascii=False))
         elif args.command == "status":
             repo.init_schema()
             print(json.dumps(repo.counts(), indent=2, ensure_ascii=False))
@@ -104,6 +116,8 @@ def main() -> None:
                 "papers": command_papers(repo, client, args.paper_limit, args.force),
                 "documents": command_documents(repo, client, args.data_dir, args.download_limit, args.force),
                 "text": command_extract_text(repo, args.data_dir, args.text_limit),
+                "chunks": command_index_chunks(repo, None, False),
+                "actors": command_extract_actors(repo, None),
                 "counts": repo.counts(),
             }
             print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -231,6 +245,32 @@ def command_extract_text(repo: SessionNetRepository, data_dir: Path, limit: int 
 
 def _sanitize_text(text: str) -> str:
     return text.encode("utf-8", errors="replace").decode("utf-8")
+
+
+def command_index_chunks(repo: SessionNetRepository, limit: int | None, rebuild: bool) -> dict[str, int]:
+    repo.init_schema()
+    if rebuild:
+        repo.connection.execute("DELETE FROM actor_mentions")
+        repo.connection.execute("DELETE FROM document_chunks_fts")
+        repo.connection.execute("DELETE FROM document_chunks")
+        repo.connection.commit()
+    indexed = 0
+    documents = 0
+    for row in repo.documents_pending_chunks(limit):
+        chunks = chunk_document(row)
+        indexed += repo.save_document_chunks(row["id"], chunks, rebuild=False)
+        documents += 1
+    return {"documents": documents, "chunks": indexed}
+
+
+def command_extract_actors(repo: SessionNetRepository, limit: int | None) -> dict[str, int]:
+    repo.init_schema()
+    faction_names = [row["name"] for row in repo.bodies() if "fraktion" in row["name"].lower()]
+    chunks = repo.chunks_pending_actor_mentions(limit)
+    mentions = 0
+    for chunk in chunks:
+        mentions += repo.save_actor_mentions(extract_actor_mentions(chunk, faction_names))
+    return {"chunks": len(chunks), "actor_mentions": mentions}
 
 
 def _repo(data_dir: Path) -> SessionNetRepository:
