@@ -1,6 +1,6 @@
 # Contributing
 
-Danke für dein Interesse an diesem Projekt. Ziel ist ein lokaler, nachvollziehbarer MCP-Zugang zu öffentlichen kommunalpolitischen Daten, aktuell mit Fokus auf Witzenhausen/SessionNet.
+Danke für dein Interesse an diesem Projekt. Ziel ist ein lokaler, nachvollziehbarer MCP-Zugang zu öffentlichen kommunalpolitischen Daten. Der aktuelle unterstützte Adapter ist Witzenhausen/SessionNet; die Codebasis soll perspektivisch weitere Kommunen und Ratsinformationssysteme unterstützen.
 
 ## Grundsätze
 
@@ -10,6 +10,31 @@ Danke für dein Interesse an diesem Projekt. Ziel ist ein lokaler, nachvollziehb
 - Scraper sollen konservativ sein: Caching, Rate-Limit, Resume-Fähigkeit.
 - Lokale Daten, PDFs, SQLite-Dateien und extrahierte Texte nicht committen.
 - MCP-Tools sollen kompakte, zitierbare Evidenz liefern statt riesige Dokumente zurückzugeben.
+- Neue Kommunen sollen als Adapter/Konfiguration ergänzt werden, nicht durch Hardcoding in Witzenhausen-spezifische Module.
+- Standardmodell ist eine Datenbank und ein MCP-Runtime pro Kommune. Multi-Kommunen-Betrieb braucht explizite Mandantenfähigkeit.
+
+## Neue Kommunen und Adapter
+
+Wenn du eine weitere Kommune anbinden möchtest, dokumentiere zuerst:
+
+- öffentliches RIS/Bürgerinfoportal und Basis-URLs
+- verwendetes System, z.B. SessionNet, OParl, Allris oder anderes
+- welche öffentlichen Seiten Sitzungen, Gremien, Vorlagen und Dokumente enthalten
+- ob Dokumente direkt öffentlich herunterladbar sind
+- bekannte Einschränkungen, Rate-Limits, `robots.txt`-Hinweise oder Nutzungsbedingungen
+
+Technisch sollte eine neue Kommune langfristig über Konfiguration und Adapter auswählbar sein. Solange die gemeinsame Adapter-Abstraktion noch nicht fertig ist, darf ein neuer Adapter pragmatisch beginnen, sollte aber Quell-spezifische Parser von generischen Repository-/MCP-Funktionen trennen.
+
+## Datenschutz und verantwortliche Nutzung
+
+Dieses Projekt verarbeitet öffentliche kommunalpolitische Unterlagen. Diese können personenbezogene Informationen enthalten, z.B. Namen von Mandatsträgerinnen, Bürgerinnen oder Antragstellern. Beiträge sollten keine unnötige Anreicherung, Profilbildung oder Veröffentlichung lokaler Daten-Dumps fördern.
+
+Bitte achte besonders darauf:
+
+- keine nicht-öffentlichen Datenquellen einzubinden
+- keine Authentifizierung oder Zugriffskontrollen zu umgehen
+- keine lokalen PDFs, SQLite-Datenbanken oder extrahierten Texte ins Repository aufzunehmen
+- Analyse-Tools als Evidenz-/Recherchehilfe zu formulieren, nicht als verbindliche politische Bewertung
 
 ## Setup
 
