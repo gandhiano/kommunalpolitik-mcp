@@ -1,9 +1,12 @@
 {
   "mcpServers": {
     "kommunalpolitik-mcp": {
-      "command": "./venv/bin/python",
+      "command": "/path/to/your/kommunalpolitik-mcp/.venv/bin/python",
       "args": ["-m", "src.mcp_server"],
-      "cwd": "/path/to/your/kommunalpolitik-mcp"
+      "cwd": "/path/to/your/kommunalpolitik-mcp",
+      "env": {
+        "WITZENHAUSEN_DB_PATH": "/path/to/your/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite"
+      }
     }
   }
 }

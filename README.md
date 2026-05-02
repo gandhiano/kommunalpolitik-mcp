@@ -44,8 +44,53 @@ kommunalpolitik-mcp/
 ## 📊 Datenquellen
 
 - **OParl API**: 23+ Kommunen verfügbar (Rees, Gernsheim, Dortmund, etc.)
-- **SessionNet Scraping**: Für weitere Städte ohne OParl-API
+- **SessionNet Scraping**: Für Witzenhausen und weitere Städte ohne nutzbare OParl-API
 - **Bestehende Infrastruktur**: Python Scraper bereits vorhanden
+
+## Witzenhausen SessionNet Ingestion
+
+Witzenhausen nutzt ein öffentliches SessionNet-Bürgerinfoportal statt einer offenen OParl-API. Die neue lokale Ingestion liest ausschließlich öffentliche BI-Seiten, speichert Metadaten in SQLite und PDFs/Texte im lokalen Dateisystem.
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Lokale Datenbank anlegen
+python -m src.ingest.witzenhausen init-db
+
+# Öffentliche Gremien laden
+python -m src.ingest.witzenhausen --allow-public-crawl bodies
+
+# Sitzungen laden, z.B. ab 2026
+python -m src.ingest.witzenhausen --allow-public-crawl meetings --from-year 2026 --to-year 2026
+
+# Details, Tagesordnung, Vorlagen- und Dokumentlinks laden
+python -m src.ingest.witzenhausen --allow-public-crawl details --limit 25
+
+# PDFs herunterladen und eingebetteten Text extrahieren
+python -m src.ingest.witzenhausen --allow-public-crawl documents --limit 25
+python -m src.ingest.witzenhausen extract-text --limit 25
+
+# Status anzeigen
+python -m src.ingest.witzenhausen status
+```
+
+Lokale Ausgabe:
+
+```text
+data/witzenhausen/
+├── witzenhausen.sqlite
+├── raw/
+│   ├── html/
+│   └── pdf/
+└── text/
+```
+
+Hinweise:
+- Es werden keine Login-Seiten und kein Gremieninfoportal (`/gi/`) verwendet.
+- Live-Requests sind bewusst opt-in über `--allow-public-crawl`.
+- HTML wird lokal gecacht, PDFs werden nur einmal heruntergeladen.
+- Dokumente mit `NS`, `Niederschrift` oder `Protokoll` werden als `minutes` klassifiziert.
 
 ## 🔧 MCP Tools
 

@@ -18,6 +18,18 @@ from .tools.meetings import (
     get_meeting_details, get_meeting_details_tool, 
     get_protocol_text, get_protocol_text_tool
 )
+from .tools.witzenhausen import (
+    get_witzenhausen_document_text,
+    get_witzenhausen_document_text_tool,
+    get_witzenhausen_meeting,
+    get_witzenhausen_meeting_tool,
+    list_witzenhausen_bodies,
+    list_witzenhausen_bodies_tool,
+    list_witzenhausen_meetings,
+    list_witzenhausen_meetings_tool,
+    search_witzenhausen_documents,
+    search_witzenhausen_documents_tool,
+)
 
 # Logging konfigurieren - nur für Debugging, nicht in Produktion
 # logging.basicConfig(level=logging.INFO)
@@ -34,7 +46,12 @@ async def handle_list_tools() -> list[Tool]:
         list_municipalities_tool,
         get_meetings_tool,
         get_meeting_details_tool,
-        get_protocol_text_tool
+        get_protocol_text_tool,
+        list_witzenhausen_bodies_tool,
+        list_witzenhausen_meetings_tool,
+        get_witzenhausen_meeting_tool,
+        search_witzenhausen_documents_tool,
+        get_witzenhausen_document_text_tool,
     ]
 
 
@@ -63,6 +80,35 @@ async def handle_call_tool(name: str, arguments: dict):
         elif name == "get_protocol_text":
             return await get_protocol_text(
                 meeting_oparl_url=arguments["meeting_oparl_url"]
+            )
+
+        elif name == "list_witzenhausen_bodies":
+            return await list_witzenhausen_bodies(
+                limit=arguments.get("limit", 100)
+            )
+
+        elif name == "list_witzenhausen_meetings":
+            return await list_witzenhausen_meetings(
+                body_id=arguments.get("body_id"),
+                year=arguments.get("year"),
+                limit=arguments.get("limit", 20)
+            )
+
+        elif name == "get_witzenhausen_meeting":
+            return await get_witzenhausen_meeting(
+                meeting_id=arguments["meeting_id"]
+            )
+
+        elif name == "search_witzenhausen_documents":
+            return await search_witzenhausen_documents(
+                query=arguments["query"],
+                document_type=arguments.get("document_type"),
+                limit=arguments.get("limit", 10)
+            )
+
+        elif name == "get_witzenhausen_document_text":
+            return await get_witzenhausen_document_text(
+                document_id=arguments["document_id"]
             )
         
         else:
