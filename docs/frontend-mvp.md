@@ -278,6 +278,33 @@ The agent must:
 - motion editor
 - Markdown export
 
+## Local Prototype
+
+Start the private backend from the repository root:
+
+```bash
+.venv/bin/kommunalpolitik http --host 127.0.0.1 --port 8000
+```
+
+If you start the backend from another working directory, point it at the local SQLite explicitly:
+
+```bash
+KOMMUNALPOLITIK_DB_PATH=/ABSOLUTE/PATH/kommunalpolitik-mcp/data/witzenhausen/witzenhausen.sqlite \
+  /ABSOLUTE/PATH/kommunalpolitik-mcp/.venv/bin/kommunalpolitik http --host 127.0.0.1 --port 8000
+```
+
+Start the web frontend in a second terminal:
+
+```bash
+cd web/frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Open `http://127.0.0.1:5173`. The Vite dev server proxies `/agent` and `/health` to the private backend at `http://127.0.0.1:8000`.
+
+The current prototype uses `KOMMUNALPOLITIK_LLM_PROVIDER=none` behavior. It is agent-shaped and source-backed, but does not call Anthropic, OpenAI, or any external LLM yet.
+
 ### Phase 4: Deployment
 
 - Extend Docker/Compose for web app and agent API.
