@@ -303,7 +303,39 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 Open `http://127.0.0.1:5173`. The Vite dev server proxies `/agent` and `/health` to the private backend at `http://127.0.0.1:8000`.
 
-The current prototype uses `KOMMUNALPOLITIK_LLM_PROVIDER=none` behavior. It is agent-shaped and source-backed, but does not call Anthropic, OpenAI, or any external LLM yet.
+By default the prototype uses `KOMMUNALPOLITIK_LLM_PROVIDER=none`. That mode is useful for tests and local retrieval checks, but it is not the intended pilot experience.
+
+To run the real server-side AI agent, configure one provider before starting the backend.
+
+Anthropic:
+
+```bash
+KOMMUNALPOLITIK_LLM_PROVIDER=anthropic \
+ANTHROPIC_API_KEY=sk-ant-... \
+KOMMUNALPOLITIK_LLM_MODEL=claude-3-5-sonnet-latest \
+.venv/bin/kommunalpolitik http --host 127.0.0.1 --port 8000
+```
+
+OpenAI:
+
+```bash
+KOMMUNALPOLITIK_LLM_PROVIDER=openai \
+OPENAI_API_KEY=sk-... \
+KOMMUNALPOLITIK_LLM_MODEL=gpt-4o-mini \
+.venv/bin/kommunalpolitik http --host 127.0.0.1 --port 8000
+```
+
+OpenAI-compatible endpoint:
+
+```bash
+KOMMUNALPOLITIK_LLM_PROVIDER=openai-compatible \
+KOMMUNALPOLITIK_LLM_BASE_URL=http://127.0.0.1:1234/v1 \
+KOMMUNALPOLITIK_LLM_API_KEY=local-key \
+KOMMUNALPOLITIK_LLM_MODEL=local-model \
+.venv/bin/kommunalpolitik http --host 127.0.0.1 --port 8000
+```
+
+The frontend never receives provider API keys. It only calls `/agent`; retrieval, prompt construction, and LLM calls happen server-side.
 
 ### Phase 4: Deployment
 
