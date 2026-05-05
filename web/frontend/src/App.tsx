@@ -186,11 +186,38 @@ function App() {
           </button>
 
           {error && <div className="error-box">{error}</div>}
+          {response && <InlineResult response={response} />}
         </div>
       </section>
 
       {response && <Results response={response} />}
     </main>
+  )
+}
+
+function InlineResult({ response }: { response: AgentResponse }) {
+  const firstSource = response.sources[0]
+
+  return (
+    <section className="inline-result" aria-live="polite">
+      <div>
+        <p className="kicker">Ergebnis</p>
+        <h3>{labelForMode(response.mode)}</h3>
+      </div>
+      <p>{firstSentence(response.answer)}</p>
+      <div className="result-metrics">
+        <span>{response.sources.length} Quellen</span>
+        <span>{response.actions_taken.length} Schritte</span>
+        <span>Provider: {response.provider}</span>
+      </div>
+      {firstSource && (
+        <a className="inline-source" href={firstSource.url ?? '#'} rel="noreferrer" target="_blank">
+          <span>Erste Fundstelle</span>
+          <strong>{firstSource.title ?? 'Unbenannte Quelle'}</strong>
+          {firstSource.meeting_date && <small>{firstSource.meeting_date}</small>}
+        </a>
+      )}
+    </section>
   )
 }
 
@@ -211,7 +238,7 @@ function Results({ response }: { response: AgentResponse }) {
 
       <aside className="side-stack">
         <section className="trace-card">
-          <p className="kicker">Werkzeugspur</p>
+          <p className="kicker">Rechercheweg</p>
           <ol>
             {response.actions_taken.map((action, index) => (
               <li key={`${action.name}-${index}`}>
@@ -268,6 +295,11 @@ function labelForMode(mode: AgentMode) {
   if (mode === 'motion_draft') return 'Antragsvorbereitung'
   if (mode === 'follow_up') return 'Nachfrage'
   return 'Rechercheergebnis'
+}
+
+function firstSentence(text: string) {
+  const line = text.split('\n')[0]?.trim()
+  return line || text
 }
 
 export default App
