@@ -75,10 +75,22 @@ docker run --rm \
 `deploy/docker-compose.example.yml` provides a minimal private-network Compose starting point bound to localhost:
 
 ```bash
-docker compose -f deploy/docker-compose.example.yml up --build
+docker compose -f deploy/docker-compose.example.yml up --build -d
 ```
 
 If you put it behind a reverse proxy, keep the route internal or add authentication before public exposure.
+
+### End-To-End Local Docker Test
+
+Run the containerized service locally, smoke-test the MCP endpoint, then stop the service:
+
+```bash
+docker compose -f deploy/docker-compose.example.yml up --build -d
+kommunalpolitik smoke-http --url http://127.0.0.1:8000/mcp --call-tool
+docker compose -f deploy/docker-compose.example.yml down
+```
+
+The smoke test verifies `/health`, MCP initialization, MCP tool listing, and read access to the configured SQLite database through the container mount.
 
 ## Data Refresh
 
