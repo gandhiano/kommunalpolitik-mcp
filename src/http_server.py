@@ -14,7 +14,11 @@ from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
+from .agent import AgentRequest, run_agent
 from .mcp_server import server
+
+
+AGENT_MODES = {"research", "briefing", "motion_draft", "follow_up"}
 
 
 def create_app(stateless: bool = True, json_response: bool = False) -> Starlette:
@@ -39,11 +43,37 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
     async def health(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok", "transport": "streamable-http"})
 
+    async def agent(request: Request) -> JSONResponse:
+        try:
+            payload = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
+
+        task = str(payload.get("task") or "").strip()
+        mode = str(payload.get("mode") or "research")
+        if not task:
+            return JSONResponse({"error": "Field 'task' is required"}, status_code=400)
+        if mode not in AGENT_MODES:
+            return JSONResponse({"error": f"Unsupported mode: {mode}"}, status_code=400)
+
+        response = await run_agent(
+            AgentRequest(
+                task=task,
+                mode=mode,  # type: ignore[arg-type]
+                topic=payload.get("topic"),
+                actor=payload.get("actor"),
+                meeting_id=payload.get("meeting_id"),
+                limit=int(payload.get("limit") or 5),
+            )
+        )
+        return JSONResponse(response.to_dict())
+
     return Starlette(
         debug=False,
         lifespan=lifespan,
         routes=[
             Route("/health", endpoint=health, methods=["GET"]),
+            Route("/agent", endpoint=agent, methods=["POST"]),
             Mount("/", app=handle_mcp),
         ],
     )
