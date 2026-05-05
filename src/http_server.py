@@ -69,6 +69,8 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             )
         except FileNotFoundError as exc:
             return JSONResponse({"error": str(exc)}, status_code=503)
+        except ValueError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=503)
         return JSONResponse(response.to_dict())
 
     return Starlette(
