@@ -1,8 +1,4 @@
-"""Deterministic server-side agent orchestration.
-
-The first MVP provider is intentionally `none`: it exercises retrieval and
-response shaping without making network calls or spending LLM tokens.
-"""
+"""Server-side agent orchestration for the web MVP."""
 
 from __future__ import annotations
 
@@ -95,44 +91,15 @@ class WitzenhausenAgentTools:
         return _payload(await witzenhausen.get_meeting(meeting_id=meeting_id))
 
 
-class AgentProvider(Protocol):
-    name: str
-
-    async def generate(
-        self,
-        request: AgentRequest,
-        sources: list[AgentSource],
-        context: dict[str, Any],
-    ) -> AgentResponse: ...
-
-
-class NoneProvider:
-    name = "none"
-
-    async def generate(
-        self,
-        request: AgentRequest,
-        sources: list[AgentSource],
-        context: dict[str, Any],
-    ) -> AgentResponse:
-        draft = _motion_template(request, sources) if request.mode == "motion_draft" else None
-        return AgentResponse(
-            mode=request.mode,
-            answer=_deterministic_answer(request, sources, context),
-            sources=sources,
-            actions_taken=list(context.get("actions_taken", [])),
-            draft=draft,
-            provider=self.name,
-        )
-
-
 async def run_agent(
     request: AgentRequest,
     tools: AgentTools | None = None,
-    provider: AgentProvider | None = None,
+    provider: Any | None = None,
 ) -> AgentResponse:
+    from .providers import provider_from_env
+
     tools = tools or WitzenhausenAgentTools()
-    provider = provider or NoneProvider()
+    provider = provider or provider_from_env()
     actions: list[AgentAction] = []
     context: dict[str, Any] = {"actions_taken": actions}
 
