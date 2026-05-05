@@ -26,12 +26,13 @@ Planned local usage:
 - Docker Compose for less technical local installs.
 - Persistent local volume for SQLite, cached HTML, PDFs, and extracted text.
 
-Planned server/cloud usage:
+Planned MVP server usage:
 
 - HTTP/Streamable MCP transport in addition to stdio.
-- Bearer-token authentication for early hosted deployments.
+- Private-network backend access first; do not expose the MCP endpoint directly to the public internet.
+- Defer application authentication until there is a frontend web app or a concrete hosted-user model.
 - Separate ingestion/sync job from the read-only MCP server.
-- Deployment docs for a hosted endpoint, e.g. `https://<domain>/<municipality>/mcp`.
+- Deployment docs for a private endpoint, e.g. `http://<private-host>:8000/mcp` or an internal HTTPS route.
 
 ## Non-Technical Users
 
@@ -40,7 +41,9 @@ Early target: Green fraction users who should not need local developer tooling.
 Preferred first hosted model:
 
 - Host MCP + database + sync centrally.
-- Let users consume it from existing LLM interfaces where possible, especially ChatGPT Custom Connectors if available.
+- Keep MCP as a backend service reachable only from a private network.
+- Let power users consume it from existing MCP clients such as OpenCode when they are on that private network.
+- Provide a simple frontend web app later for non-technical users.
 - Avoid operating LLM billing in the first iteration if users can use their own LLM product accounts.
 
 Possible later model:
@@ -51,8 +54,8 @@ Possible later model:
 
 ## Near-Term Implementation Plan
 
-1. Add Dockerfile and Docker Compose examples.
-2. Add HTTP MCP transport and hosted connector docs.
+1. Verify Dockerfile, Docker Compose example, and HTTP MCP runtime for private-network MVP usage.
+2. Keep the HTTP/MCP smoke-test workflow current as deployment behavior changes.
 3. Extract a clearer adapter interface once a second municipality is implemented.
 
 ## Caveats
