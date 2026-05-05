@@ -56,16 +56,19 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
         if mode not in AGENT_MODES:
             return JSONResponse({"error": f"Unsupported mode: {mode}"}, status_code=400)
 
-        response = await run_agent(
-            AgentRequest(
-                task=task,
-                mode=mode,  # type: ignore[arg-type]
-                topic=payload.get("topic"),
-                actor=payload.get("actor"),
-                meeting_id=payload.get("meeting_id"),
-                limit=int(payload.get("limit") or 5),
+        try:
+            response = await run_agent(
+                AgentRequest(
+                    task=task,
+                    mode=mode,  # type: ignore[arg-type]
+                    topic=payload.get("topic"),
+                    actor=payload.get("actor"),
+                    meeting_id=payload.get("meeting_id"),
+                    limit=int(payload.get("limit") or 5),
+                )
             )
-        )
+        except FileNotFoundError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=503)
         return JSONResponse(response.to_dict())
 
     return Starlette(
