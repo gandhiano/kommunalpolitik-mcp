@@ -118,15 +118,15 @@ function App() {
             <p className="kicker">Pilot für die grüne Fraktionsarbeit</p>
             <h1>Agentische Recherche mit belastbaren Fundstellen.</h1>
             <p className="lead">
-              Frage nach Sitzungen, früheren Beschlüssen oder Antragsideen. Der Prototyp
-              arbeitet zuerst retrieval-only: Er zeigt Quellen und bereitet Ergebnisse vor,
-              ohne externe LLM-Kosten auszulösen.
+              Frage nach Sitzungen, früheren Beschlüssen oder Antragsideen. Der Server-Agent
+              recherchiert zuerst im kommunalen Korpus und formuliert dann mit dem konfigurierten
+              LLM eine quellengebundene Antwort.
             </p>
           </div>
           <aside className="status-card" aria-label="Systemstatus">
             <span className="pulse" />
-            <strong>Provider: none</strong>
-            <p>MCP und Datenbank bleiben privat. Die Web-App spricht nur den lokalen Agent-Endpunkt an.</p>
+            <strong>Server-side Agent</strong>
+            <p>LLM-Schlüssel bleiben auf dem Server. Die Antwort zeigt den tatsächlich genutzten Provider.</p>
           </aside>
         </div>
       </section>
