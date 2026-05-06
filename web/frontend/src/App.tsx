@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './App.css'
 
 type AgentMode = 'research' | 'briefing' | 'motion_draft' | 'follow_up'
+type ResearchDepth = 'quick' | 'auto' | 'deep'
 
 interface AgentSource {
   title: string | null
@@ -78,6 +79,7 @@ const examples = [
 function App() {
   const [mode, setMode] = useState<AgentMode>('research')
   const [task, setTask] = useState(modes[0].prompt)
+  const [researchDepth, setResearchDepth] = useState<ResearchDepth>('auto')
   const [response, setResponse] = useState<AgentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -90,7 +92,7 @@ function App() {
       const res = await fetch('/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: task.trim(), mode }),
+        body: JSON.stringify({ task: task.trim(), mode, research_depth: researchDepth }),
       })
       if (!res.ok) {
         throw new Error(await res.text())
@@ -155,6 +157,14 @@ function App() {
               <p className="kicker">{activeMode.eyebrow}</p>
               <h2>{activeMode.title}</h2>
             </div>
+            <label className="depth-control">
+              Recherche-Tiefe
+              <select value={researchDepth} onChange={(event) => setResearchDepth(event.target.value as ResearchDepth)}>
+                <option value="auto">Auto</option>
+                <option value="quick">Schnell</option>
+                <option value="deep">Gründlich</option>
+              </select>
+            </label>
           </div>
 
           <textarea

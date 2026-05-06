@@ -20,6 +20,7 @@ from .mcp_server import server
 
 
 AGENT_MODES = {"research", "briefing", "motion_draft", "follow_up"}
+RESEARCH_DEPTHS = {"quick", "auto", "deep"}
 
 
 def create_app(stateless: bool = True, json_response: bool = False) -> Starlette:
@@ -56,6 +57,9 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             return JSONResponse({"error": "Field 'task' is required"}, status_code=400)
         if mode not in AGENT_MODES:
             return JSONResponse({"error": f"Unsupported mode: {mode}"}, status_code=400)
+        research_depth = str(payload.get("research_depth") or "auto")
+        if research_depth not in RESEARCH_DEPTHS:
+            return JSONResponse({"error": f"Unsupported research_depth: {research_depth}"}, status_code=400)
 
         try:
             response = await run_agent(
@@ -65,6 +69,7 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
                     topic=payload.get("topic"),
                     actor=payload.get("actor"),
                     meeting_id=payload.get("meeting_id"),
+                    research_depth=research_depth,  # type: ignore[arg-type]
                 )
             )
         except FileNotFoundError as exc:

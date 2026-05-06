@@ -13,6 +13,7 @@ from src.tools import witzenhausen
 
 
 AgentMode = Literal["research", "briefing", "motion_draft", "follow_up"]
+ResearchDepth = Literal["quick", "auto", "deep"]
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,16 @@ class AgentRequest:
     topic: str | None = None
     actor: str | None = None
     meeting_id: str | None = None
-    limit: int | None = None
+    research_depth: ResearchDepth = "auto"
+
+
+@dataclass(frozen=True)
+class RetrievalPlan:
+    depth: ResearchDepth
+    limit: int
+    target_sources: int
+    max_searches: int
+    complexity: int
 
 
 @dataclass(frozen=True)
@@ -154,16 +164,29 @@ async def _collect_sources(
     document_type: str | None = None,
 ) -> list[AgentSource]:
     primary_query = _search_query(request)
-    limit = _retrieval_limit(request.mode)
-    sources = await _search_text(tools, actions, primary_query, limit, document_type)
+    plan = _retrieval_plan(request)
+    actions.append(
+        AgentAction(
+            "plan_retrieval",
+            {
+                "depth": plan.depth,
+                "complexity": plan.complexity,
+                "target_sources": plan.target_sources,
+                "max_searches": plan.max_searches,
+            },
+        )
+    )
 
-    follow_up_query = _follow_up_query(request, primary_query)
-    if follow_up_query and len(sources) < _target_source_count(request.mode):
-        more_sources = await _search_text(tools, actions, follow_up_query, limit, document_type)
+    sources: list[AgentSource] = []
+    for query in _search_queries(request, primary_query)[: plan.max_searches]:
+        more_sources = await _search_text(tools, actions, query, plan.limit, document_type)
         sources = _dedupe_sources([*sources, *more_sources])
+        filtered_sources = _filter_sources_by_date(request, sources)
+        if plan.depth != "deep" and len(filtered_sources) >= plan.target_sources:
+            break
 
     sources = _apply_date_filter(request, sources, actions)
-    return sources[:limit]
+    return sources[: plan.limit]
 
 
 async def _search_text(
@@ -180,18 +203,60 @@ async def _search_text(
     return await tools.search_text(query=query, limit=limit, document_type=document_type)
 
 
-def _retrieval_limit(mode: AgentMode) -> int:
-    if mode == "motion_draft":
-        return 12
-    if mode == "briefing":
-        return 16
-    return 12
+def _retrieval_plan(request: AgentRequest) -> RetrievalPlan:
+    complexity = _task_complexity(request)
+    depth = request.research_depth
+
+    if depth == "quick":
+        return RetrievalPlan(depth=depth, limit=6, target_sources=4, max_searches=1, complexity=complexity)
+
+    if depth == "deep":
+        limit = 24 if request.mode == "briefing" else 20
+        return RetrievalPlan(depth=depth, limit=limit, target_sources=12, max_searches=3, complexity=complexity)
+
+    if complexity >= 4:
+        limit = 20 if request.mode == "briefing" else 18
+        return RetrievalPlan(depth=depth, limit=limit, target_sources=10, max_searches=3, complexity=complexity)
+
+    if complexity >= 2:
+        limit = 16 if request.mode == "briefing" else 14
+        return RetrievalPlan(depth=depth, limit=limit, target_sources=8, max_searches=2, complexity=complexity)
+
+    limit = 10 if request.mode == "briefing" else 8
+    return RetrievalPlan(depth=depth, limit=limit, target_sources=5, max_searches=1, complexity=complexity)
 
 
-def _target_source_count(mode: AgentMode) -> int:
-    if mode == "briefing":
-        return 8
-    return 6
+def _task_complexity(request: AgentRequest) -> int:
+    task = request.task.lower()
+    terms = [term for term in re.findall(r"[\wÄÖÜäöüß]+", request.task) if _useful_query_term(term)]
+    score = 0
+    if len(terms) >= 5:
+        score += 1
+    if len(terms) >= 9:
+        score += 1
+    if re.search(r"\b(?:seit|ab|nach|zwischen|vor|bis)\s+(?:19|20)\d{2}\b", task):
+        score += 1
+    if any(word in task for word in (" oder ", " und ", "gegenargument", "risiko", "vergleich", "beschlüsse", "diskussionen")):
+        score += 1
+    if request.mode in {"briefing", "motion_draft"}:
+        score += 2
+    return score
+
+
+def _search_queries(request: AgentRequest, primary_query: str) -> list[str]:
+    queries = [primary_query]
+
+    if follow_up_query := _follow_up_query(request, primary_query):
+        queries.append(follow_up_query)
+
+    if expansion := _domain_expansion_query(request):
+        queries.append(expansion)
+
+    unique_queries: list[str] = []
+    for query in queries:
+        if query and query not in unique_queries:
+            unique_queries.append(query)
+    return unique_queries
 
 
 def _follow_up_query(request: AgentRequest, primary_query: str) -> str | None:
@@ -204,6 +269,20 @@ def _follow_up_query(request: AgentRequest, primary_query: str) -> str | None:
 
     query = " ".join(terms[:8])
     return query if query and query != primary_query else None
+
+
+def _domain_expansion_query(request: AgentRequest) -> str | None:
+    task = request.task.lower()
+    expansions: list[str] = []
+    if any(term in task for term in ("haushalt", "haushaltsplan", "nachtrag", "investitionsprogramm")):
+        expansions.extend(["Haushalt", "Haushaltsplan", "Nachtrag", "Jahresabschluss", "Investitionsprogramm"])
+    if any(term in task for term in ("beschluss", "beschlüsse", "diskussion", "beratung")):
+        expansions.extend(["Beschlussfassung", "Beratung", "Niederschrift", "Vorlage"])
+    if any(term in task for term in ("nächste", "naechste", "sitzung", "tagesordnung")):
+        expansions.extend(["Tagesordnung", "Einladung", "Vorlage", "Unterlagen"])
+    if not expansions:
+        return None
+    return " ".join(dict.fromkeys(expansions))
 
 
 def _useful_query_term(term: str) -> bool:
@@ -231,11 +310,18 @@ def _apply_date_filter(
     if not start_year:
         return sources
 
-    filtered = [source for source in sources if not _source_year(source) or _source_year(source) >= start_year]
+    filtered = _filter_sources_by_date(request, sources)
     removed = len(sources) - len(filtered)
     if removed:
         actions.append(AgentAction("filter_sources", {"meeting_date_from": f"{start_year}-01-01", "removed": removed}))
     return filtered
+
+
+def _filter_sources_by_date(request: AgentRequest, sources: list[AgentSource]) -> list[AgentSource]:
+    start_year = _start_year(request.task)
+    if not start_year:
+        return sources
+    return [source for source in sources if not _source_year(source) or _source_year(source) >= start_year]
 
 
 def _start_year(text: str) -> int | None:

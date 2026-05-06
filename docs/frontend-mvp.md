@@ -51,6 +51,14 @@ The agent must show sources, distinguish evidence from interpretation, and make 
 
 The agent may perform multiple retrieval steps before answering. The UI can expose the research trace for transparency, but source count and search parameters are agent decisions, not user controls.
 
+The UI may expose retrieval effort rather than raw search parameters:
+
+- `quick`: one narrow retrieval pass for simple lookups
+- `auto`: the default, where the agent estimates task complexity and chooses breadth/iterations
+- `deep`: a deliberate deeper-research mode with multiple retrieval passes before answer generation
+
+This mirrors a "thinking effort" control without asking users to tune technical limits.
+
 ## Architecture
 
 ```text
