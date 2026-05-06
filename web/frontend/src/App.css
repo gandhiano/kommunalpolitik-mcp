@@ -296,6 +296,12 @@ textarea:focus,
   padding: 24px;
 }
 
+.used-sources-section {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 22px;
+}
+
 .provider-pill {
   border: 1px solid rgba(190, 242, 100, 0.25);
   border-radius: 999px;
@@ -369,6 +375,41 @@ textarea:focus,
   gap: 22px;
 }
 
+.source-detail-card {
+  position: sticky;
+  top: 18px;
+}
+
+.source-detail-card h3 {
+  margin: 8px 0 8px;
+  color: #f7fee7;
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+}
+
+.source-detail-card p {
+  color: #bbf7d0;
+}
+
+.source-detail-card blockquote {
+  max-height: 360px;
+  overflow: auto;
+  margin: 14px 0;
+  border-left: 3px solid #bef264;
+  padding-left: 14px;
+  color: #dcfce7;
+  line-height: 1.55;
+}
+
+.source-open-link {
+  display: inline-flex;
+  border: 1px solid rgba(190, 242, 100, 0.28);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #d9f99d;
+  text-decoration: none;
+}
+
 .trace-card,
 .source-card {
   border-radius: 26px;
@@ -397,6 +438,10 @@ textarea:focus,
 .sources {
   display: grid;
   gap: 12px;
+}
+
+.used-sources {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .source-item {

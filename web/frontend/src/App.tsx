@@ -197,6 +197,9 @@ function App() {
 }
 
 function Results({ response }: { response: AgentResponse }) {
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0)
+  const activeSource = response.sources[activeSourceIndex] ?? response.sources[0] ?? null
+
   return (
     <section className="results-grid">
       <article className="answer-card">
@@ -207,35 +210,21 @@ function Results({ response }: { response: AgentResponse }) {
           </div>
           <span className="provider-pill">{response.provider}</span>
         </div>
-        <MarkdownText sourceCount={response.sources.length} text={response.answer} />
+        <MarkdownText
+          onCitationFocus={(index) => setActiveSourceIndex(index - 1)}
+          sourceCount={response.sources.length}
+          text={response.answer}
+        />
         {response.draft && <DraftPreview draft={response.draft} />}
+
+        <section className="used-sources-section">
+          <p className="kicker">Im Bericht verwendet</p>
+          <SourceList sources={response.sources} onSourceFocus={setActiveSourceIndex} />
+        </section>
       </article>
 
       <aside className="side-stack">
-        <section className="source-card">
-          <p className="kicker">Im Bericht verwendet</p>
-          <div className="sources">
-            {response.sources.map((source, index) => (
-              <a
-                className="source-item"
-                href={source.url ?? '#'}
-                id={`source-${index + 1}`}
-                key={`${source.document_id}-${index}`}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <span className="source-meta">
-                  <span className="source-number">[{index + 1}]</span>
-                  {source.meeting_date ?? source.document_type ?? 'Quelle'}
-                </span>
-                <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
-                <small>{source.body_name}</small>
-                {source.snippet && <p>{source.snippet}</p>}
-              </a>
-            ))}
-            {response.sources.length === 0 && <p className="empty">Keine Quellen gefunden.</p>}
-          </div>
-        </section>
+        <SourceDetail source={activeSource} sourceIndex={activeSourceIndex + 1} />
 
         {response.related_sources.length > 0 && (
           <section className="source-card related-card">
@@ -276,7 +265,72 @@ function Results({ response }: { response: AgentResponse }) {
   )
 }
 
-function MarkdownText({ sourceCount, text }: { sourceCount: number; text: string }) {
+function SourceList({ sources, onSourceFocus }: { sources: AgentSource[]; onSourceFocus: (index: number) => void }) {
+  return (
+    <div className="sources used-sources">
+      {sources.map((source, index) => (
+        <a
+          className="source-item"
+          href={source.url ?? '#'}
+          id={`source-${index + 1}`}
+          key={`${source.document_id}-${index}`}
+          onFocus={() => onSourceFocus(index)}
+          onMouseEnter={() => onSourceFocus(index)}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <span className="source-meta">
+            <span className="source-number">[{index + 1}]</span>
+            {source.meeting_date ?? source.document_type ?? 'Quelle'}
+          </span>
+          <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
+          <small>{source.body_name}</small>
+          {source.snippet && <p>{source.snippet}</p>}
+        </a>
+      ))}
+      {sources.length === 0 && <p className="empty">Keine Quellen gefunden.</p>}
+    </div>
+  )
+}
+
+function SourceDetail({ source, sourceIndex }: { source: AgentSource | null; sourceIndex: number }) {
+  if (!source) {
+    return (
+      <section className="source-card source-detail-card">
+        <p className="kicker">Quellendetail</p>
+        <p className="empty">Keine Quelle ausgewählt.</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="source-card source-detail-card">
+      <p className="kicker">Quellendetail</p>
+      <span className="source-meta">
+        <span className="source-number">[{sourceIndex}]</span>
+        {source.meeting_date ?? source.document_type ?? 'Quelle'}
+      </span>
+      <h3>{source.title ?? 'Unbenannte Quelle'}</h3>
+      {source.body_name && <p>{source.body_name}</p>}
+      {source.snippet && <blockquote>{source.snippet}</blockquote>}
+      {source.url && (
+        <a className="source-open-link" href={source.url} rel="noreferrer" target="_blank">
+          Original öffnen
+        </a>
+      )}
+    </section>
+  )
+}
+
+function MarkdownText({
+  onCitationFocus,
+  sourceCount,
+  text,
+}: {
+  onCitationFocus: (index: number) => void
+  sourceCount: number
+  text: string
+}) {
   const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
 
   return (
@@ -286,29 +340,15 @@ function MarkdownText({ sourceCount, text }: { sourceCount: number; text: string
         const firstLine = lines[0] ?? ''
 
         if (firstLine.startsWith('### ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" sourceCount={sourceCount} />
+          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
         }
         if (firstLine.startsWith('## ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" sourceCount={sourceCount} />
+          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
         }
         if (firstLine.startsWith('# ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" sourceCount={sourceCount} />
+          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
         }
-        if (lines.every((line) => /^[-*]\s+/.test(line))) {
-          return (
-            <ul key={index}>
-              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceCount)}</li>)}
-            </ul>
-          )
-        }
-        if (lines.every((line) => /^\d+[.)]\s+/.test(line))) {
-          return (
-            <ol key={index}>
-              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceCount)}</li>)}
-            </ol>
-          )
-        }
-        return <p key={index}>{renderInline(lines.join(' '), sourceCount)}</p>
+        return <MarkdownLines key={index} lines={lines} onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
       })}
     </div>
   )
@@ -318,23 +358,64 @@ function BlockWithHeading({
   heading,
   lines,
   level,
+  onCitationFocus,
   sourceCount,
 }: {
   heading: string
   lines: string[]
   level: 'h3' | 'h4'
+  onCitationFocus: (index: number) => void
   sourceCount: number
 }) {
   const Heading = level
   return (
     <div>
-      <Heading>{renderInline(heading, sourceCount)}</Heading>
-      {lines.length > 0 && <p>{renderInline(lines.join(' '), sourceCount)}</p>}
+      <Heading>{renderInline(heading, sourceCount, onCitationFocus)}</Heading>
+      {lines.length > 0 && <MarkdownLines lines={lines} onCitationFocus={onCitationFocus} sourceCount={sourceCount} />}
     </div>
   )
 }
 
-function renderInline(text: string, sourceCount: number) {
+function MarkdownLines({
+  lines,
+  onCitationFocus,
+  sourceCount,
+}: {
+  lines: string[]
+  onCitationFocus: (index: number) => void
+  sourceCount: number
+}) {
+  const bulletItems = parseBulletItems(lines)
+  if (bulletItems.length > 0) {
+    return (
+      <ul>
+        {bulletItems.map((line) => <li key={line}>{renderInline(line, sourceCount, onCitationFocus)}</li>)}
+      </ul>
+    )
+  }
+
+  if (lines.every((line) => /^\d+[.)]\s+/.test(line))) {
+    return (
+      <ol>
+        {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceCount, onCitationFocus)}</li>)}
+      </ol>
+    )
+  }
+
+  return <p>{renderInline(lines.join(' '), sourceCount, onCitationFocus)}</p>
+}
+
+function parseBulletItems(lines: string[]) {
+  if (lines.every((line) => /^[-*]\s+/.test(line))) {
+    return lines.map((line) => line.replace(/^[-*]\s+/, ''))
+  }
+
+  const joined = lines.join(' ').trim()
+  if (!joined.startsWith('- ')) return []
+  return joined.replace(/^-\s+/, '').split(/\s+-\s+(?=\[\d+\]|\*\*)/).map((item) => item.trim()).filter(Boolean)
+}
+
+function renderInline(text: string, sourceCount: number, onCitationFocus: (index: number) => void) {
   return text.split(/(\*\*[^*]+\*\*|\[\d+\])/g).map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={index}>{part.slice(2, -2)}</strong>
@@ -343,7 +424,14 @@ function renderInline(text: string, sourceCount: number) {
       const sourceIndex = Number(part.slice(1, -1))
       if (sourceIndex >= 1 && sourceIndex <= sourceCount) {
         return (
-          <a className="citation-link" href={`#source-${sourceIndex}`} key={index} title={`Zur Quelle ${sourceIndex}`}>
+          <a
+            className="citation-link"
+            href={`#source-${sourceIndex}`}
+            key={index}
+            onFocus={() => onCitationFocus(sourceIndex)}
+            onMouseEnter={() => onCitationFocus(sourceIndex)}
+            title={`Zur Quelle ${sourceIndex}`}
+          >
             {part}
           </a>
         )
