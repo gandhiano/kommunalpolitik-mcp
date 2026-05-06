@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from datetime import date
 import json
 import re
 from typing import Any, Literal, Protocol
@@ -121,10 +122,29 @@ async def run_agent(
         context["meeting"] = await tools.get_meeting(request.meeting_id)
         sources, related_sources = await _collect_sources(request, tools, actions)
     elif request.mode == "briefing":
-        meeting_limit = 10
+        meeting_limit = 80
         actions.append(AgentAction("list_meetings", {"limit": meeting_limit}))
         context["meetings"] = await tools.list_meetings(limit=meeting_limit)
+        selected_meeting = _select_meeting_for_briefing(request, context["meetings"])
+        if selected_meeting:
+            meeting_id = str(selected_meeting.get("id"))
+            actions.append(
+                AgentAction(
+                    "select_meeting",
+                    {
+                        "meeting_id": meeting_id,
+                        "body_name": selected_meeting.get("body_name"),
+                        "meeting_date": selected_meeting.get("meeting_date"),
+                        "selection": selected_meeting.get("selection"),
+                    },
+                )
+            )
+            actions.append(AgentAction("get_meeting", {"meeting_id": meeting_id}))
+            context["meeting"] = await tools.get_meeting(meeting_id)
         sources, related_sources = await _collect_sources(request, tools, actions)
+        if meeting_source := _source_from_meeting_context(context.get("meeting")):
+            related_sources = _dedupe_sources([*sources, *related_sources])
+            sources = [meeting_source]
     elif request.mode == "motion_draft":
         sources, related_sources = await _collect_sources(request, tools, actions, document_type="motion")
     else:
@@ -152,12 +172,65 @@ def _source_from_search_result(row: dict[str, Any]) -> AgentSource:
     )
 
 
+def _source_from_meeting_context(meeting_context: Any) -> AgentSource | None:
+    if not isinstance(meeting_context, dict):
+        return None
+    meeting = meeting_context.get("meeting")
+    if not isinstance(meeting, dict):
+        return None
+    agenda_items = meeting_context.get("agenda_items", [])
+    agenda_lines = []
+    for item in agenda_items[:20]:
+        if isinstance(item, dict):
+            number = item.get("number") or "TOP"
+            title = str(item.get("title") or "").replace("|", " ")
+            agenda_lines.append(f"{number}: {title}")
+    snippet = "\n".join(agenda_lines) if agenda_lines else "Keine Tagesordnungspunkte in den lokalen Daten gefunden."
+    return AgentSource(
+        title=f"Tagesordnung {meeting.get('body_name') or meeting.get('title') or 'Sitzung'}",
+        url=meeting.get("detail_url"),
+        snippet=snippet,
+        document_id=f"meeting-{meeting.get('id')}",
+        body_name=meeting.get("body_name"),
+        meeting_date=meeting.get("meeting_date"),
+        document_type="meeting",
+    )
+
+
 def _search_query(request: AgentRequest) -> str:
     if request.topic:
         return request.topic
     if request.mode == "briefing" and "nächste" in request.task.lower():
         return "Tagesordnung Sitzung Unterlagen"
     return request.task
+
+
+def _select_meeting_for_briefing(request: AgentRequest, meetings: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not meetings:
+        return None
+
+    body_hint = _body_hint(request.task)
+    candidates = [meeting for meeting in meetings if not body_hint or body_hint in str(meeting.get("body_name") or "").lower()]
+    if not candidates:
+        return None
+
+    today = date.today().isoformat()
+    future = [meeting for meeting in candidates if str(meeting.get("meeting_date") or "") >= today]
+    if future:
+        selected = min(future, key=lambda meeting: str(meeting.get("meeting_date") or "9999-99-99"))
+        return {**selected, "selection": "next_upcoming"}
+
+    selected = max(candidates, key=lambda meeting: str(meeting.get("meeting_date") or "0000-00-00"))
+    return {**selected, "selection": "latest_available_no_upcoming_found"}
+
+
+def _body_hint(task: str) -> str | None:
+    lowered = task.lower()
+    if "stadtverordnetenversammlung" in lowered or "stvv" in lowered:
+        return "stadtverordnetenversammlung"
+    if "haupt" in lowered and "finanz" in lowered:
+        return "haupt-, finanz- und rechtsausschuss"
+    return None
 
 
 async def _collect_sources(

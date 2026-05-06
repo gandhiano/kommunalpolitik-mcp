@@ -191,7 +191,18 @@ def build_agent_prompt(
             lines.append(f"- {meeting.get('meeting_date')}: {meeting.get('title')} ({meeting.get('body_name')})")
 
     if meeting := context.get("meeting"):
-        lines.extend(["", "Ausgewaehlte Sitzung:", str(meeting.get("meeting") or meeting)[:2500]])
+        meeting_meta = meeting.get("meeting") if isinstance(meeting, dict) else None
+        agenda_items = meeting.get("agenda_items", []) if isinstance(meeting, dict) else []
+        lines.extend(["", "Ausgewaehlte Sitzung:", str(meeting_meta or meeting)[:1200]])
+        if agenda_items:
+            lines.append("Tagesordnung der ausgewaehlten Sitzung:")
+            for item in agenda_items[:30]:
+                number = item.get("number") or "TOP"
+                title = str(item.get("title") or "").replace("|", " ")
+                reference = f" ({item.get('paper_reference')})" if item.get("paper_reference") else ""
+                lines.append(f"- {number}: {title[:500]}{reference}")
+        elif meeting_meta:
+            lines.append("Keine Tagesordnungspunkte in den lokalen Daten fuer diese Sitzung gefunden.")
 
     lines.extend(["", "Quellen:"])
     if not sources:

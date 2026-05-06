@@ -36,11 +36,23 @@ class FakeTools:
 
     async def list_meetings(self, limit: int) -> list[dict[str, Any]]:
         self.calls.append(("list_meetings", {"limit": limit}))
-        return [{"id": "meeting-1", "title": "StVV", "meeting_date": "2026-01-01"}]
+        return [
+            {"id": "meeting-ob", "title": "Ortsbeirat", "body_name": "Ortsbeirat", "meeting_date": "2026-01-01"},
+            {"id": "meeting-1", "title": "StVV", "body_name": "Stadtverordnetenversammlung", "meeting_date": "2026-01-02"},
+        ]
 
     async def get_meeting(self, meeting_id: str) -> dict[str, Any]:
         self.calls.append(("get_meeting", {"meeting_id": meeting_id}))
-        return {"meeting": {"id": meeting_id, "title": "StVV"}, "agenda_items": []}
+        return {
+            "meeting": {
+                "id": meeting_id,
+                "title": "StVV",
+                "body_name": "Stadtverordnetenversammlung",
+                "meeting_date": "2026-01-02",
+                "detail_url": "https://example.invalid/meeting",
+            },
+            "agenda_items": [{"number": "Ö 1", "title": "Wahl der Stadtverordnetenvorsteherin"}],
+        }
 
 
 class DateFilterTools(FakeTools):
@@ -178,27 +190,31 @@ def test_briefing_mode_lists_meetings_before_searching() -> None:
         )
     )
 
-    assert [action.name for action in response.actions_taken] == ["list_meetings", "plan_retrieval", "search_text", "search_text"]
+    assert [action.name for action in response.actions_taken] == ["list_meetings", "select_meeting", "get_meeting", "plan_retrieval", "search_text", "search_text"]
     assert "Briefing" in response.answer
-    assert tools.calls[0] == ("list_meetings", {"limit": 10})
-    assert tools.calls[1] == ("search_text", {"query": "Haushalt", "limit": 24, "document_type": None})
-    assert tools.calls[2] == ("search_text", {"query": "naechste Sitzung", "limit": 24, "document_type": None})
+    assert tools.calls[0] == ("list_meetings", {"limit": 80})
+    assert tools.calls[1] == ("get_meeting", {"meeting_id": "meeting-1"})
+    assert tools.calls[2] == ("search_text", {"query": "Haushalt", "limit": 24, "document_type": None})
+    assert tools.calls[3] == ("search_text", {"query": "naechste Sitzung", "limit": 24, "document_type": None})
+    assert response.sources[0].title == "Tagesordnung Stadtverordnetenversammlung"
+    assert "Wahl der Stadtverordnetenvorsteherin" in (response.sources[0].snippet or "")
 
 
 def test_briefing_for_next_meeting_uses_agenda_search_terms() -> None:
     tools = FakeTools()
-    asyncio.run(
+    response = asyncio.run(
         run_agent(
             AgentRequest(task="Was steht in der nächsten Stadtverordnetenversammlung an?", mode="briefing"),
             tools=tools,
         )
     )
 
-    assert tools.calls[1] == (
+    assert response.actions_taken[1].arguments["body_name"] == "Stadtverordnetenversammlung"
+    assert tools.calls[2] == (
         "search_text",
         {"query": "Tagesordnung Sitzung Unterlagen", "limit": 24, "document_type": None},
     )
-    assert tools.calls[2] == (
+    assert tools.calls[3] == (
         "search_text",
         {"query": "steht nächsten Stadtverordnetenversammlung", "limit": 24, "document_type": None},
     )

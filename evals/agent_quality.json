@@ -1,0 +1,14 @@
+[
+  {
+    "id": "briefing_next_stvv_uses_agenda",
+    "mode": "briefing",
+    "research_depth": "auto",
+    "task": "Erstelle mir ein Briefing zur nächsten Stadtverordnetenversammlung.",
+    "checks": {
+      "selected_body_contains": "Stadtverordnetenversammlung",
+      "first_source_title_contains": "Tagesordnung",
+      "first_source_type": "meeting",
+      "first_source_snippet_contains": ["Hauptsatzung", "Aussch", "STV/004/2026"]
+    }
+  }
+]
