@@ -22,6 +22,8 @@ They access a browser-based web app, authenticate through the pilot access gate,
 
 They should not need to understand MCP, SQLite, ingestion, model providers, or API keys.
 
+They should also not tune retrieval parameters such as source limits. The server-side agent owns search breadth, follow-up searches, and stopping criteria based on the task.
+
 ### Power User: MCP Client User
 
 Power users use agentic clients such as OpenCode, Claude Desktop, or MCP Inspector.
@@ -46,6 +48,8 @@ Example tasks:
 - "Welche Gegenargumente oder früheren Beschlüsse muss ich beachten?"
 
 The agent must show sources, distinguish evidence from interpretation, and make outputs editable.
+
+The agent may perform multiple retrieval steps before answering. The UI can expose the research trace for transparency, but source count and search parameters are agent decisions, not user controls.
 
 ## Architecture
 
@@ -134,6 +138,17 @@ Allows refinements such as:
 - "als Änderungsantrag"
 - "zeige mehr Quellen"
 - "formuliere neutraler"
+
+### Later: Specialized Agents
+
+As usage patterns become clearer, split the general orchestrator into specialized agents, for example:
+
+- a meeting briefing agent focused on agendas, TOPs, and related documents
+- a research agent focused on broad evidence gathering and chronology
+- a motion drafting agent focused on precedents, resolution language, and caveats
+- a scrutiny agent focused on counterarguments, risks, and missing evidence
+
+The first MVP keeps one orchestrator with mode-specific retrieval and prompt contracts so the API remains simple while this design matures.
 
 ## LLM Provider Strategy
 

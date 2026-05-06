@@ -272,6 +272,13 @@ def _response_from_llm(
     context: dict[str, Any],
     answer: str,
 ) -> AgentResponse:
+    if not answer.strip():
+        from .core import _deterministic_answer
+
+        answer = (
+            f"{_deterministic_answer(request, sources, context)}\n\n"
+            "Hinweis: Der konfigurierte LLM-Provider hat eine leere Antwort geliefert."
+        )
     return AgentResponse(
         mode=request.mode,
         answer=answer,

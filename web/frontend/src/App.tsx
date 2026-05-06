@@ -78,7 +78,6 @@ const examples = [
 function App() {
   const [mode, setMode] = useState<AgentMode>('research')
   const [task, setTask] = useState(modes[0].prompt)
-  const [limit, setLimit] = useState(5)
   const [response, setResponse] = useState<AgentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -91,7 +90,7 @@ function App() {
       const res = await fetch('/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: task.trim(), mode, limit }),
+        body: JSON.stringify({ task: task.trim(), mode }),
       })
       if (!res.ok) {
         throw new Error(await res.text())
@@ -156,14 +155,6 @@ function App() {
               <p className="kicker">{activeMode.eyebrow}</p>
               <h2>{activeMode.title}</h2>
             </div>
-            <label className="limit-control">
-              Quellen
-              <select value={limit} onChange={(event) => setLimit(Number(event.target.value))}>
-                <option value={3}>3</option>
-                <option value={5}>5</option>
-                <option value={8}>8</option>
-              </select>
-            </label>
           </div>
 
           <textarea
@@ -257,13 +248,13 @@ function MarkdownText({ text }: { text: string }) {
         const firstLine = lines[0] ?? ''
 
         if (firstLine.startsWith('### ')) {
-          return <h4 key={index}>{renderInline(firstLine.slice(4))}</h4>
+          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" />
         }
         if (firstLine.startsWith('## ')) {
-          return <h3 key={index}>{renderInline(firstLine.slice(3))}</h3>
+          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" />
         }
         if (firstLine.startsWith('# ')) {
-          return <h3 key={index}>{renderInline(firstLine.slice(2))}</h3>
+          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" />
         }
         if (lines.every((line) => /^[-*]\s+/.test(line))) {
           return (
@@ -281,6 +272,16 @@ function MarkdownText({ text }: { text: string }) {
         }
         return <p key={index}>{renderInline(lines.join(' '))}</p>
       })}
+    </div>
+  )
+}
+
+function BlockWithHeading({ heading, lines, level }: { heading: string; lines: string[]; level: 'h3' | 'h4' }) {
+  const Heading = level
+  return (
+    <div>
+      <Heading>{renderInline(heading)}</Heading>
+      {lines.length > 0 && <p>{renderInline(lines.join(' '))}</p>}
     </div>
   )
 }

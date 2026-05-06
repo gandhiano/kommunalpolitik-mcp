@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.agent.core import AgentAction, AgentRequest, AgentSource
-from src.agent.providers import NoneProvider, build_agent_prompt, provider_from_env
+from src.agent.providers import NoneProvider, _response_from_llm, build_agent_prompt, provider_from_env
 
 
 def test_provider_from_env_defaults_to_none(monkeypatch) -> None:
@@ -67,3 +67,16 @@ def test_briefing_prompt_demands_structured_markdown() -> None:
     assert "## Kurzbriefing" in prompt
     assert "## Rueckfragen fuer die Sitzung" in prompt
     assert "## Unsicherheiten" in prompt
+
+
+def test_empty_llm_answer_falls_back_to_retrieval_summary() -> None:
+    response = _response_from_llm(
+        "openai",
+        AgentRequest(task="Haushalt", mode="research"),
+        [AgentSource(title="Haushaltsplan", url="https://example.invalid/doc")],
+        {"actions_taken": []},
+        "",
+    )
+
+    assert "Haushaltsplan" in response.answer
+    assert "leere Antwort" in response.answer

@@ -65,7 +65,6 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
                     topic=payload.get("topic"),
                     actor=payload.get("actor"),
                     meeting_id=payload.get("meeting_id"),
-                    limit=int(payload.get("limit") or 5),
                 )
             )
         except FileNotFoundError as exc:
@@ -93,7 +92,21 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--stateful", action="store_true", help="Track MCP sessions instead of using stateless requests")
     parser.add_argument("--json-response", action="store_true", help="Use JSON responses instead of SSE streams")
+    parser.add_argument("--reload", action="store_true", help="Reload the local HTTP server when source files change")
     args = parser.parse_args(argv)
+
+    if args.reload and (args.stateful or args.json_response):
+        raise SystemExit("--reload only supports the default stateless SSE-compatible local dev server")
+
+    if args.reload:
+        uvicorn.run(
+            "src.http_server:create_app",
+            factory=True,
+            host=args.host,
+            port=args.port,
+            reload=True,
+        )
+        return
 
     uvicorn.run(
         create_app(stateless=not args.stateful, json_response=args.json_response),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import re
 from typing import Any, Literal, Protocol
 
 from mcp.types import TextContent
@@ -21,7 +22,7 @@ class AgentRequest:
     topic: str | None = None
     actor: str | None = None
     meeting_id: str | None = None
-    limit: int = 5
+    limit: int | None = None
 
 
 @dataclass(frozen=True)
@@ -106,28 +107,16 @@ async def run_agent(
     if request.mode == "briefing" and request.meeting_id:
         actions.append(AgentAction("get_meeting", {"meeting_id": request.meeting_id}))
         context["meeting"] = await tools.get_meeting(request.meeting_id)
-        query = _search_query(request)
-        actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
-        sources = await tools.search_text(query=query, limit=request.limit)
+        sources = await _collect_sources(request, tools, actions)
     elif request.mode == "briefing":
-        actions.append(AgentAction("list_meetings", {"limit": min(request.limit, 10)}))
-        context["meetings"] = await tools.list_meetings(limit=min(request.limit, 10))
-        query = _search_query(request)
-        actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
-        sources = await tools.search_text(query=query, limit=request.limit)
+        meeting_limit = 10
+        actions.append(AgentAction("list_meetings", {"limit": meeting_limit}))
+        context["meetings"] = await tools.list_meetings(limit=meeting_limit)
+        sources = await _collect_sources(request, tools, actions)
     elif request.mode == "motion_draft":
-        query = _search_query(request)
-        actions.append(
-            AgentAction(
-                "search_text",
-                {"query": query, "document_type": "motion", "limit": request.limit},
-            )
-        )
-        sources = await tools.search_text(query=query, document_type="motion", limit=request.limit)
+        sources = await _collect_sources(request, tools, actions, document_type="motion")
     else:
-        query = _search_query(request)
-        actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
-        sources = await tools.search_text(query=query, limit=request.limit)
+        sources = await _collect_sources(request, tools, actions)
 
     return await provider.generate(request, sources, context)
 
@@ -156,6 +145,132 @@ def _search_query(request: AgentRequest) -> str:
     if request.mode == "briefing" and "nächste" in request.task.lower():
         return "Tagesordnung Sitzung Unterlagen"
     return request.task
+
+
+async def _collect_sources(
+    request: AgentRequest,
+    tools: AgentTools,
+    actions: list[AgentAction],
+    document_type: str | None = None,
+) -> list[AgentSource]:
+    primary_query = _search_query(request)
+    limit = _retrieval_limit(request.mode)
+    sources = await _search_text(tools, actions, primary_query, limit, document_type)
+
+    follow_up_query = _follow_up_query(request, primary_query)
+    if follow_up_query and len(sources) < _target_source_count(request.mode):
+        more_sources = await _search_text(tools, actions, follow_up_query, limit, document_type)
+        sources = _dedupe_sources([*sources, *more_sources])
+
+    sources = _apply_date_filter(request, sources, actions)
+    return sources[:limit]
+
+
+async def _search_text(
+    tools: AgentTools,
+    actions: list[AgentAction],
+    query: str,
+    limit: int,
+    document_type: str | None,
+) -> list[AgentSource]:
+    arguments: dict[str, Any] = {"query": query, "limit": limit}
+    if document_type:
+        arguments["document_type"] = document_type
+    actions.append(AgentAction("search_text", arguments))
+    return await tools.search_text(query=query, limit=limit, document_type=document_type)
+
+
+def _retrieval_limit(mode: AgentMode) -> int:
+    if mode == "motion_draft":
+        return 12
+    if mode == "briefing":
+        return 16
+    return 12
+
+
+def _target_source_count(mode: AgentMode) -> int:
+    if mode == "briefing":
+        return 8
+    return 6
+
+
+def _follow_up_query(request: AgentRequest, primary_query: str) -> str | None:
+    if request.topic:
+        return request.task if request.task != request.topic else None
+
+    terms = [term for term in re.findall(r"[\wÄÖÜäöüß]+", request.task) if _useful_query_term(term)]
+    if not terms:
+        return None
+
+    query = " ".join(terms[:8])
+    return query if query and query != primary_query else None
+
+
+def _useful_query_term(term: str) -> bool:
+    return len(term) > 2 and term.lower() not in _QUERY_STOPWORDS
+
+
+def _dedupe_sources(sources: list[AgentSource]) -> list[AgentSource]:
+    seen: set[tuple[str | None, str | None, str | None]] = set()
+    unique: list[AgentSource] = []
+    for source in sources:
+        key = (source.document_id, source.url, source.title)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(source)
+    return unique
+
+
+def _apply_date_filter(
+    request: AgentRequest,
+    sources: list[AgentSource],
+    actions: list[AgentAction],
+) -> list[AgentSource]:
+    start_year = _start_year(request.task)
+    if not start_year:
+        return sources
+
+    filtered = [source for source in sources if not _source_year(source) or _source_year(source) >= start_year]
+    removed = len(sources) - len(filtered)
+    if removed:
+        actions.append(AgentAction("filter_sources", {"meeting_date_from": f"{start_year}-01-01", "removed": removed}))
+    return filtered
+
+
+def _start_year(text: str) -> int | None:
+    match = re.search(r"\b(?:seit|ab|nach)\s+(20\d{2}|19\d{2})\b", text.lower())
+    return int(match.group(1)) if match else None
+
+
+def _source_year(source: AgentSource) -> int | None:
+    if not source.meeting_date:
+        return _title_year(source.title)
+    match = re.match(r"(\d{4})", source.meeting_date)
+    return int(match.group(1)) if match else _title_year(source.title)
+
+
+def _title_year(title: str | None) -> int | None:
+    if not title:
+        return None
+    if match := re.search(r"\b(19\d{2}|20\d{2})\b", title):
+        return int(match.group(1))
+    if match := re.search(r"\b(19\d{2}|20\d{2})\d{4}\b", title):
+        return int(match.group(1))
+    if match := re.search(r"\b\d{1,2}\s+\d{1,2}\s+(\d{2})\b", title):
+        year = int(match.group(1))
+        return 2000 + year if year < 70 else 1900 + year
+    return None
+
+
+_QUERY_STOPWORDS = {
+    "aber", "alle", "als", "auch", "auf", "aus", "bei", "bis", "das", "dass",
+    "dem", "den", "der", "des", "die", "doch", "ein", "eine", "einem", "einen",
+    "einer", "eines", "gab", "gibt", "haben", "hat", "hatte", "im", "in", "ist",
+    "mit", "nach", "nicht", "noch", "oder", "seit", "sind", "und", "vom", "von",
+    "vor", "war", "waren", "was", "welche", "welcher", "welches", "wenn", "wer",
+    "werden", "wie", "wird", "wo", "zu", "zum", "zur", "über", "ueber",
+}
 
 
 def _deterministic_answer(

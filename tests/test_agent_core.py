@@ -43,6 +43,22 @@ class FakeTools:
         return {"meeting": {"id": meeting_id, "title": "StVV"}, "agenda_items": []}
 
 
+class DateFilterTools(FakeTools):
+    async def search_text(
+        self,
+        query: str,
+        limit: int,
+        document_type: str | None = None,
+    ) -> list[AgentSource]:
+        self.calls.append(("search_text", {"query": query, "limit": limit, "document_type": document_type}))
+        return [
+            AgentSource(title="Alter Haushalt", url="https://example.invalid/old", meeting_date="2020-09-29"),
+            AgentSource(title="Protokoll SVV 29 09 20", url="https://example.invalid/old-title"),
+            AgentSource(title="Neuer Haushalt", url="https://example.invalid/new", meeting_date="2022-11-08"),
+            AgentSource(title="Haushaltsplan ohne Sitzungsdatum", url="https://example.invalid/plan"),
+        ]
+
+
 def test_research_mode_returns_sources_and_actions() -> None:
     tools = FakeTools()
     response = asyncio.run(
@@ -56,7 +72,21 @@ def test_research_mode_returns_sources_and_actions() -> None:
     assert response.mode == "research"
     assert response.sources[0].title == "Antrag Verkehrswende"
     assert response.actions_taken[0].name == "search_text"
-    assert tools.calls == [("search_text", {"query": "Verkehr", "limit": 3, "document_type": None})]
+    assert tools.calls == [("search_text", {"query": "Verkehr", "limit": 12, "document_type": None})]
+
+
+def test_research_since_year_filters_older_meeting_sources() -> None:
+    tools = DateFilterTools()
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(task="Welche Diskussionen gab es zum Haushalt seit 2021?", mode="research"),
+            tools=tools,
+        )
+    )
+
+    assert [source.title for source in response.sources] == ["Neuer Haushalt", "Haushaltsplan ohne Sitzungsdatum"]
+    assert response.actions_taken[-1].name == "filter_sources"
+    assert response.actions_taken[-1].arguments == {"meeting_date_from": "2021-01-01", "removed": 2}
 
 
 def test_briefing_mode_lists_meetings_before_searching() -> None:
@@ -68,10 +98,11 @@ def test_briefing_mode_lists_meetings_before_searching() -> None:
         )
     )
 
-    assert [action.name for action in response.actions_taken] == ["list_meetings", "search_text"]
+    assert [action.name for action in response.actions_taken] == ["list_meetings", "search_text", "search_text"]
     assert "Briefing" in response.answer
-    assert tools.calls[0] == ("list_meetings", {"limit": 5})
-    assert tools.calls[1] == ("search_text", {"query": "Haushalt", "limit": 5, "document_type": None})
+    assert tools.calls[0] == ("list_meetings", {"limit": 10})
+    assert tools.calls[1] == ("search_text", {"query": "Haushalt", "limit": 16, "document_type": None})
+    assert tools.calls[2] == ("search_text", {"query": "naechste Sitzung", "limit": 16, "document_type": None})
 
 
 def test_briefing_for_next_meeting_uses_agenda_search_terms() -> None:
@@ -85,7 +116,11 @@ def test_briefing_for_next_meeting_uses_agenda_search_terms() -> None:
 
     assert tools.calls[1] == (
         "search_text",
-        {"query": "Tagesordnung Sitzung Unterlagen", "limit": 5, "document_type": None},
+        {"query": "Tagesordnung Sitzung Unterlagen", "limit": 16, "document_type": None},
+    )
+    assert tools.calls[2] == (
+        "search_text",
+        {"query": "steht nächsten Stadtverordnetenversammlung", "limit": 16, "document_type": None},
     )
 
 
@@ -103,7 +138,7 @@ def test_motion_draft_mode_uses_motion_filter_and_returns_template() -> None:
     assert response.draft["precedent_count"] == 1
     assert response.actions_taken[0].arguments["document_type"] == "motion"
     assert tools.calls == [
-        ("search_text", {"query": "Hortbetreuung sichern", "limit": 5, "document_type": "motion"})
+        ("search_text", {"query": "Hortbetreuung sichern", "limit": 12, "document_type": "motion"})
     ]
 
 
@@ -116,5 +151,7 @@ def test_briefing_with_meeting_id_loads_meeting() -> None:
         )
     )
 
-    assert [action.name for action in response.actions_taken] == ["get_meeting", "search_text"]
+    assert [action.name for action in response.actions_taken] == ["get_meeting", "search_text", "search_text"]
     assert tools.calls[0] == ("get_meeting", {"meeting_id": "meeting-1"})
+    assert tools.calls[1] == ("search_text", {"query": "TOP 7", "limit": 16, "document_type": None})
+    assert tools.calls[2] == ("search_text", {"query": "TOP", "limit": 16, "document_type": None})
