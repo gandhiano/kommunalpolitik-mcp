@@ -25,6 +25,7 @@ dependencies = [
 kommunalpolitik = "src.cli:main"
 kommunalpolitik-mcp = "src.mcp_server:run"
 kommunalpolitik-http = "src.http_server:main"
+kommunalpolitik-smoke-http = "src.smoke_http:main"
 kommunalpolitik-ingest-witzenhausen = "src.ingest.witzenhausen:main"
 
 [tool.setuptools.packages.find]

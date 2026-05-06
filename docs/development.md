@@ -42,8 +42,12 @@ For MCP tool changes, run a stdio smoke test or check the configured client can 
 
 For HTTP transport changes, also check `/health` and run a streamable HTTP client smoke test when available.
 
+```bash
+kommunalpolitik smoke-http --url http://127.0.0.1:8000/mcp
+```
+
 ## Current Next Milestones
 
 - Config-driven Witzenhausen ingestion via `configs/municipalities/witzenhausen.json`.
 - Python package/CLI setup.
-- Docker deployment examples and hosted HTTP MCP transport.
+- Docker deployment examples and HTTP MCP smoke testing.

@@ -509,7 +509,23 @@ get_evidence_pack_tool = Tool(
 
 
 def _fts_query(query: str) -> str:
-    terms = re.findall(r"[\wÄÖÜäöüß-]+", query)
+    terms = [term for term in re.findall(r"[\wÄÖÜäöüß]+", query) if _useful_fts_term(term)]
     if not terms:
-        return f'"{query.replace(chr(34), "")}"'
-    return " ".join(f'"{term}"' for term in terms)
+        fallback = query.replace(chr(34), "").strip()
+        return f'"{fallback}"' if fallback else '""'
+    return " OR ".join(f"{term}*" for term in terms)
+
+
+def _useful_fts_term(term: str) -> bool:
+    return len(term) > 2 and term.lower() not in _GERMAN_STOPWORDS
+
+
+_GERMAN_STOPWORDS = {
+    "aber", "alle", "als", "an", "auch", "auf", "aus", "bei", "bis", "das", "dass",
+    "dem", "den", "der", "des", "die", "dies", "diese", "diesem", "diesen", "dieser",
+    "dieses", "doch", "ein", "eine", "einem", "einen", "einer", "eines", "er", "es",
+    "gab", "gibt", "haben", "hat", "hatte", "im", "in", "ist", "mit", "nach", "nicht",
+    "noch", "oder", "seit", "sind", "um", "und", "vom", "von", "vor", "war", "waren",
+    "was", "welche", "welcher", "welches", "wenn", "wer", "werden", "wie", "wird", "wo",
+    "zu", "zum", "zur", "über", "ueber",
+}

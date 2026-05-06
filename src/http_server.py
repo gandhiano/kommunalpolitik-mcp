@@ -14,7 +14,13 @@ from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
+from .agent import AgentRequest, run_agent
+from .agent.providers import ProviderError
 from .mcp_server import server
+
+
+AGENT_MODES = {"research", "briefing", "motion_draft", "follow_up"}
+RESEARCH_DEPTHS = {"quick", "auto", "deep"}
 
 
 def create_app(stateless: bool = True, json_response: bool = False) -> Starlette:
@@ -39,11 +45,47 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
     async def health(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok", "transport": "streamable-http"})
 
+    async def agent(request: Request) -> JSONResponse:
+        try:
+            payload = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
+
+        task = str(payload.get("task") or "").strip()
+        mode = str(payload.get("mode") or "research")
+        if not task:
+            return JSONResponse({"error": "Field 'task' is required"}, status_code=400)
+        if mode not in AGENT_MODES:
+            return JSONResponse({"error": f"Unsupported mode: {mode}"}, status_code=400)
+        research_depth = str(payload.get("research_depth") or "auto")
+        if research_depth not in RESEARCH_DEPTHS:
+            return JSONResponse({"error": f"Unsupported research_depth: {research_depth}"}, status_code=400)
+
+        try:
+            response = await run_agent(
+                AgentRequest(
+                    task=task,
+                    mode=mode,  # type: ignore[arg-type]
+                    topic=payload.get("topic"),
+                    actor=payload.get("actor"),
+                    meeting_id=payload.get("meeting_id"),
+                    research_depth=research_depth,  # type: ignore[arg-type]
+                )
+            )
+        except FileNotFoundError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=503)
+        except ValueError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=503)
+        except ProviderError as exc:
+            return JSONResponse({"error": exc.message}, status_code=exc.status_code)
+        return JSONResponse(response.to_dict())
+
     return Starlette(
         debug=False,
         lifespan=lifespan,
         routes=[
             Route("/health", endpoint=health, methods=["GET"]),
+            Route("/agent", endpoint=agent, methods=["POST"]),
             Mount("/", app=handle_mcp),
         ],
     )
@@ -55,7 +97,21 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--stateful", action="store_true", help="Track MCP sessions instead of using stateless requests")
     parser.add_argument("--json-response", action="store_true", help="Use JSON responses instead of SSE streams")
+    parser.add_argument("--reload", action="store_true", help="Reload the local HTTP server when source files change")
     args = parser.parse_args(argv)
+
+    if args.reload and (args.stateful or args.json_response):
+        raise SystemExit("--reload only supports the default stateless SSE-compatible local dev server")
+
+    if args.reload:
+        uvicorn.run(
+            "src.http_server:create_app",
+            factory=True,
+            host=args.host,
+            port=args.port,
+            reload=True,
+        )
+        return
 
     uvicorn.run(
         create_app(stateless=not args.stateful, json_response=args.json_response),
