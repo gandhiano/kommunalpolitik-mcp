@@ -288,10 +288,12 @@ textarea:focus,
   align-items: start;
   gap: 22px;
   margin-top: 22px;
+  min-width: 0;
 }
 
 .answer-card {
   flex: 1;
+  min-width: 0;
   border-radius: 30px;
   padding: 24px;
 }
@@ -371,13 +373,16 @@ textarea:focus,
 
 .side-stack {
   display: grid;
+  flex: 0 0 min(340px, 100%);
   width: min(340px, 100%);
+  min-width: 0;
   gap: 14px;
 }
 
 .context-card {
   position: sticky;
   top: 18px;
+  z-index: 10;
 }
 
 .context-card p {
@@ -427,6 +432,10 @@ textarea:focus,
 
 .trace-card,
 .source-card {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border-radius: 22px;
   padding: 16px;
 }
@@ -445,6 +454,7 @@ textarea:focus,
 }
 
 .trace-card span {
+  overflow-wrap: anywhere;
   color: #86efac;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem;
@@ -462,6 +472,8 @@ textarea:focus,
 .source-item {
   flex-direction: column;
   gap: 6px;
+  box-sizing: border-box;
+  min-width: 0;
   scroll-margin-top: 18px;
   color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -480,7 +492,9 @@ textarea:focus,
 .source-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .source-number {
@@ -492,6 +506,7 @@ textarea:focus,
 }
 
 .source-item strong {
+  overflow-wrap: anywhere;
   color: #f7fee7;
 }
 
