@@ -156,11 +156,17 @@ def provider_from_env() -> AgentProvider:
     raise ValueError(f"Unsupported KOMMUNALPOLITIK_LLM_PROVIDER: {provider}")
 
 
-SYSTEM_PROMPT = """Du bist ein spezialisierter kommunalpolitischer Arbeitsassistent.
-Arbeite fuer Fraktionsmitglieder in Witzenhausen. Nutze ausschliesslich die gelieferten Quellen als Tatsachengrundlage.
-Unterscheide klar zwischen belegten Fakten, politischer Einordnung und offenen Fragen.
-Zitiere Quellen mit [1], [2] usw. Wenn die Quellenlage nicht reicht, sage das deutlich.
-Erfinde keine Beschluesse, Namen, Termine oder Rechtsfolgen. Formuliere auf Deutsch, sachlich und arbeitspraktisch.
+SYSTEM_PROMPT = """Du bist ein spezialisierter kommunalpolitischer Arbeitsassistent fuer Witzenhausen.
+Du arbeitest fuer Fraktionsmitglieder und musst praktisch nutzbare, quellengebundene Ergebnisse liefern.
+
+Harte Regeln:
+- Nutze ausschliesslich die gelieferten Quellen als Tatsachengrundlage.
+- Zitiere konkrete Quellen mit [1], [2] usw. bei jeder faktischen Aussage.
+- Unterscheide klar zwischen belegten Fakten, politischer Einordnung und offenen Fragen.
+- Wenn die Quellenlage nicht reicht, sage das deutlich und nenne die fehlende Recherche.
+- Erfinde keine Beschluesse, Namen, Termine, Rechtsfolgen oder Mehrheiten.
+- Schreibe auf Deutsch, sachlich, knapp und arbeitspraktisch.
+- Gib keine generische Datenbank-Zusammenfassung aus; beantworte die Aufgabe.
 """
 
 
@@ -204,12 +210,59 @@ def build_agent_prompt(
 
 def _mode_instruction(mode: str) -> str:
     if mode == "briefing":
-        return "Erstelle ein kompaktes Briefing mit Kernaussagen, Risiken, Rueckfragen und Quellenverweisen."
+        return """Antworte exakt in dieser Markdown-Struktur:
+## Kurzbriefing
+3-5 Bulletpoints mit den wichtigsten belegten Punkten.
+
+## Relevante Quellen
+Liste die wichtigsten Quellen mit [n], Datum/Gremium und kurzer Relevanz.
+
+## Politische Einordnung
+Was bedeutet das fuer die Fraktionsarbeit? Nur vorsichtige Einordnung, keine erfundenen Fakten.
+
+## Rueckfragen fuer die Sitzung
+Konkrete Fragen, die ein Fraktionsmitglied stellen koennte.
+
+## Unsicherheiten
+Was ist aus den Quellen nicht klar?"""
     if mode == "motion_draft":
-        return "Erstelle einen ersten Antragsentwurf mit Titel, Beschlussvorschlag, Begruendung, offenen Pruefpunkten und Quellenverweisen."
+        return """Antworte exakt in dieser Markdown-Struktur:
+## Arbeitstitel
+Ein praeziser Antragstitel.
+
+## Beschlussvorschlag
+Konkreter, editierbarer Beschlussvorschlag als nummerierte Liste.
+
+## Begruendung
+Sachliche Begruendung mit Quellenverweisen [n].
+
+## Praezedenzfaelle
+Welche frueheren Antraege/Dokumente wurden als Stil- oder Inhaltsvorlage genutzt?
+
+## Offene Pruefpunkte
+Was muss politisch, rechtlich oder fachlich noch geprueft werden?"""
     if mode == "follow_up":
-        return "Beantworte die Nachfrage anhand der Quellen und benenne, was zusaetzlich recherchiert werden sollte."
-    return "Beantworte die Recherchefrage mit belegten Punkten, kurzer Einordnung und Quellenverweisen."
+        return """Antworte exakt in dieser Markdown-Struktur:
+## Antwort
+Direkte Antwort auf die Nachfrage mit Quellenverweisen.
+
+## Belege
+Die wichtigsten Quellen und was sie belegen.
+
+## Naechste Recherche
+Welche Anschlussfrage sollte als naechstes geklaert werden?"""
+    return """Antworte exakt in dieser Markdown-Struktur:
+## Antwort
+Direkte, knappe Antwort auf die Recherchefrage mit Quellenverweisen [n].
+
+## Belege
+Bulletpoints mit Quelle, Datum/Gremium und relevanter Aussage.
+
+## Einordnung
+Vorsichtige politische oder sachliche Einordnung, klar getrennt von Fakten.
+
+## Unsicherheiten
+Was bleibt offen oder braucht weitere Recherche?"""
 
 
 def _response_from_llm(

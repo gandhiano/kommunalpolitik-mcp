@@ -106,17 +106,17 @@ async def run_agent(
     if request.mode == "briefing" and request.meeting_id:
         actions.append(AgentAction("get_meeting", {"meeting_id": request.meeting_id}))
         context["meeting"] = await tools.get_meeting(request.meeting_id)
-        query = request.topic or request.task
+        query = _search_query(request)
         actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
         sources = await tools.search_text(query=query, limit=request.limit)
     elif request.mode == "briefing":
         actions.append(AgentAction("list_meetings", {"limit": min(request.limit, 10)}))
         context["meetings"] = await tools.list_meetings(limit=min(request.limit, 10))
-        query = request.topic or request.task
+        query = _search_query(request)
         actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
         sources = await tools.search_text(query=query, limit=request.limit)
     elif request.mode == "motion_draft":
-        query = request.topic or request.task
+        query = _search_query(request)
         actions.append(
             AgentAction(
                 "search_text",
@@ -125,7 +125,7 @@ async def run_agent(
         )
         sources = await tools.search_text(query=query, document_type="motion", limit=request.limit)
     else:
-        query = request.topic or request.task
+        query = _search_query(request)
         actions.append(AgentAction("search_text", {"query": query, "limit": request.limit}))
         sources = await tools.search_text(query=query, limit=request.limit)
 
@@ -148,6 +148,14 @@ def _source_from_search_result(row: dict[str, Any]) -> AgentSource:
         meeting_date=row.get("meeting_date"),
         document_type=row.get("document_type"),
     )
+
+
+def _search_query(request: AgentRequest) -> str:
+    if request.topic:
+        return request.topic
+    if request.mode == "briefing" and "nächste" in request.task.lower():
+        return "Tagesordnung Sitzung Unterlagen"
+    return request.task
 
 
 def _deterministic_answer(

@@ -74,6 +74,21 @@ def test_briefing_mode_lists_meetings_before_searching() -> None:
     assert tools.calls[1] == ("search_text", {"query": "Haushalt", "limit": 5, "document_type": None})
 
 
+def test_briefing_for_next_meeting_uses_agenda_search_terms() -> None:
+    tools = FakeTools()
+    asyncio.run(
+        run_agent(
+            AgentRequest(task="Was steht in der nächsten Stadtverordnetenversammlung an?", mode="briefing"),
+            tools=tools,
+        )
+    )
+
+    assert tools.calls[1] == (
+        "search_text",
+        {"query": "Tagesordnung Sitzung Unterlagen", "limit": 5, "document_type": None},
+    )
+
+
 def test_motion_draft_mode_uses_motion_filter_and_returns_template() -> None:
     tools = FakeTools()
     response = asyncio.run(

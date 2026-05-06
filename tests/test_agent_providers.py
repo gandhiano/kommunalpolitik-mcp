@@ -55,3 +55,15 @@ def test_build_agent_prompt_includes_sources_and_mode_instruction() -> None:
     assert "[1] Niederschrift" in prompt
     assert "Debatte zum Haushalt" in prompt
     assert "Quellenverweisen" in prompt
+
+
+def test_briefing_prompt_demands_structured_markdown() -> None:
+    prompt = build_agent_prompt(
+        AgentRequest(task="Briefing", mode="briefing"),
+        [],
+        {"actions_taken": []},
+    )
+
+    assert "## Kurzbriefing" in prompt
+    assert "## Rueckfragen fuer die Sitzung" in prompt
+    assert "## Unsicherheiten" in prompt
