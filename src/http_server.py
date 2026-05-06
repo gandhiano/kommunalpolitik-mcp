@@ -15,6 +15,7 @@ from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
 from .agent import AgentRequest, run_agent
+from .agent.providers import ProviderError
 from .mcp_server import server
 
 
@@ -71,6 +72,8 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             return JSONResponse({"error": str(exc)}, status_code=503)
         except ValueError as exc:
             return JSONResponse({"error": str(exc)}, status_code=503)
+        except ProviderError as exc:
+            return JSONResponse({"error": exc.message}, status_code=exc.status_code)
         return JSONResponse(response.to_dict())
 
     return Starlette(

@@ -12,6 +12,15 @@ import requests
 from .core import AgentRequest, AgentResponse, AgentSource, _motion_template
 
 
+class ProviderError(Exception):
+    """Safe-to-return error raised by an upstream LLM provider."""
+
+    def __init__(self, status_code: int, message: str) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.message = message
+
+
 class AgentProvider(Protocol):
     name: str
 
@@ -78,7 +87,7 @@ class AnthropicProvider:
             },
             timeout=90,
         )
-        response.raise_for_status()
+        _raise_provider_error(response, self.name)
         payload = response.json()
         blocks = payload.get("content", [])
         return "\n".join(block.get("text", "") for block in blocks if block.get("type") == "text").strip()
@@ -119,7 +128,7 @@ class OpenAIProvider:
             },
             timeout=90,
         )
-        response.raise_for_status()
+        _raise_provider_error(response, self.name)
         payload = response.json()
         return payload["choices"][0]["message"]["content"].strip()
 
@@ -225,6 +234,37 @@ def _required_env(name: str) -> str:
     if not value:
         raise ValueError(f"{name} is required for the configured LLM provider")
     return value
+
+
+def _raise_provider_error(response: requests.Response, provider: str) -> None:
+    if response.ok:
+        return
+
+    message = _provider_error_message(response, provider)
+    status_code = response.status_code if response.status_code in {400, 401, 403, 408, 409, 429} else 502
+    raise ProviderError(status_code=status_code, message=message)
+
+
+def _provider_error_message(response: requests.Response, provider: str) -> str:
+    fallback = f"{provider} provider request failed with HTTP {response.status_code}"
+    try:
+        payload = response.json()
+    except ValueError:
+        return fallback
+
+    error = payload.get("error") if isinstance(payload, dict) else None
+    if isinstance(error, dict):
+        detail = error.get("message") or error.get("type") or fallback
+    elif isinstance(error, str):
+        detail = error
+    else:
+        detail = fallback
+
+    if response.status_code == 429:
+        return f"{provider} provider rate limit or quota exceeded: {detail}"
+    if response.status_code in {401, 403}:
+        return f"{provider} provider authentication failed: {detail}"
+    return f"{provider} provider error: {detail}"
 
 
 def source_payloads(sources: list[AgentSource]) -> list[dict[str, Any]]:

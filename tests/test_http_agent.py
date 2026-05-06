@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from src.agent.core import AgentResponse
+from src.agent.providers import ProviderError
 from src import http_server
 
 
@@ -73,3 +74,18 @@ def test_agent_endpoint_returns_503_when_provider_config_is_missing(monkeypatch)
 
     assert response.status_code == 503
     assert response.json()["error"] == "ANTHROPIC_API_KEY is required"
+
+
+def test_agent_endpoint_returns_provider_status(monkeypatch) -> None:
+    from starlette.testclient import TestClient
+
+    async def fake_run_agent(_request):
+        raise ProviderError(429, "openai provider rate limit or quota exceeded")
+
+    monkeypatch.setattr(http_server, "run_agent", fake_run_agent)
+
+    with TestClient(http_server.create_app()) as client:
+        response = client.post("/agent", json={"task": "Haushalt", "mode": "research"})
+
+    assert response.status_code == 429
+    assert response.json()["error"] == "openai provider rate limit or quota exceeded"
