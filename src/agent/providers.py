@@ -49,6 +49,7 @@ class NoneProvider:
             answer=_deterministic_answer(request, sources, context),
             sources=sources,
             actions_taken=list(context.get("actions_taken", [])),
+            related_sources=list(context.get("related_sources", [])),
             draft=draft,
             provider=self.name,
         )
@@ -284,6 +285,7 @@ def _response_from_llm(
         answer=answer,
         sources=sources,
         actions_taken=list(context.get("actions_taken", [])),
+        related_sources=list(context.get("related_sources", [])),
         draft=_motion_template(request, sources) if request.mode == "motion_draft" else None,
         provider=provider,
     )

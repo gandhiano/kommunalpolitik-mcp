@@ -51,6 +51,13 @@ The agent must show sources, distinguish evidence from interpretation, and make 
 
 The agent may perform multiple retrieval steps before answering. The UI can expose the research trace for transparency, but source count and search parameters are agent decisions, not user controls.
 
+Agent responses distinguish first-class cited sources from second-class exploratory results:
+
+- `sources`: the smaller set used as the answer/briefing citation basis
+- `related_sources`: additional ranked hits that may be relevant and can be explored like search results
+
+The UI should keep the agentic output and cited sources prominent, while making related sources available without overwhelming the main answer.
+
 The UI may expose retrieval effort rather than raw search parameters:
 
 - `quick`: one narrow retrieval pass for simple lookups

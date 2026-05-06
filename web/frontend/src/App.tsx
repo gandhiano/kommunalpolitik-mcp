@@ -23,6 +23,7 @@ interface AgentResponse {
   mode: AgentMode
   answer: string
   sources: AgentSource[]
+  related_sources: AgentSource[]
   actions_taken: AgentAction[]
   draft: null | {
     title?: string
@@ -212,7 +213,7 @@ function Results({ response }: { response: AgentResponse }) {
 
       <aside className="side-stack">
         <section className="source-card">
-          <p className="kicker">Quellen</p>
+          <p className="kicker">Im Bericht verwendet</p>
           <div className="sources">
             {response.sources.map((source, index) => (
               <a
@@ -235,6 +236,29 @@ function Results({ response }: { response: AgentResponse }) {
             {response.sources.length === 0 && <p className="empty">Keine Quellen gefunden.</p>}
           </div>
         </section>
+
+        {response.related_sources.length > 0 && (
+          <section className="source-card related-card">
+            <details>
+              <summary>Weitere relevante Treffer ({response.related_sources.length})</summary>
+              <div className="sources related-sources">
+                {response.related_sources.map((source, index) => (
+                  <a
+                    className="source-item compact"
+                    href={source.url ?? '#'}
+                    key={`${source.document_id}-related-${index}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span className="source-meta">{source.meeting_date ?? source.document_type ?? 'Quelle'}</span>
+                    <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
+                    <small>{source.body_name}</small>
+                  </a>
+                ))}
+              </div>
+            </details>
+          </section>
+        )}
 
         <section className="trace-card">
           <p className="kicker">Rechercheweg</p>

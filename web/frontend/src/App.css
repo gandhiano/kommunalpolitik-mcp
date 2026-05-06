@@ -450,6 +450,25 @@ textarea:focus,
   font-size: 0.9rem;
 }
 
+.related-card summary {
+  color: #f7fee7;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.related-sources {
+  margin-top: 14px;
+}
+
+.source-item.compact {
+  gap: 4px;
+  padding: 12px;
+}
+
+.source-item.compact strong {
+  font-size: 0.95rem;
+}
+
 .draft-card {
   margin-top: 22px;
   padding: 18px;

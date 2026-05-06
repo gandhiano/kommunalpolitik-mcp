@@ -29,7 +29,8 @@ class AgentRequest:
 @dataclass(frozen=True)
 class RetrievalPlan:
     depth: ResearchDepth
-    limit: int
+    search_limit: int
+    answer_source_limit: int
     target_sources: int
     max_searches: int
     complexity: int
@@ -58,6 +59,7 @@ class AgentResponse:
     answer: str
     sources: list[AgentSource]
     actions_taken: list[AgentAction]
+    related_sources: list[AgentSource] = field(default_factory=list)
     draft: dict[str, Any] | None = None
     provider: str = "none"
 
@@ -117,17 +119,18 @@ async def run_agent(
     if request.mode == "briefing" and request.meeting_id:
         actions.append(AgentAction("get_meeting", {"meeting_id": request.meeting_id}))
         context["meeting"] = await tools.get_meeting(request.meeting_id)
-        sources = await _collect_sources(request, tools, actions)
+        sources, related_sources = await _collect_sources(request, tools, actions)
     elif request.mode == "briefing":
         meeting_limit = 10
         actions.append(AgentAction("list_meetings", {"limit": meeting_limit}))
         context["meetings"] = await tools.list_meetings(limit=meeting_limit)
-        sources = await _collect_sources(request, tools, actions)
+        sources, related_sources = await _collect_sources(request, tools, actions)
     elif request.mode == "motion_draft":
-        sources = await _collect_sources(request, tools, actions, document_type="motion")
+        sources, related_sources = await _collect_sources(request, tools, actions, document_type="motion")
     else:
-        sources = await _collect_sources(request, tools, actions)
+        sources, related_sources = await _collect_sources(request, tools, actions)
 
+    context["related_sources"] = related_sources
     return await provider.generate(request, sources, context)
 
 
@@ -162,7 +165,7 @@ async def _collect_sources(
     tools: AgentTools,
     actions: list[AgentAction],
     document_type: str | None = None,
-) -> list[AgentSource]:
+) -> tuple[list[AgentSource], list[AgentSource]]:
     primary_query = _search_query(request)
     plan = _retrieval_plan(request)
     actions.append(
@@ -171,6 +174,8 @@ async def _collect_sources(
             {
                 "depth": plan.depth,
                 "complexity": plan.complexity,
+                "search_limit": plan.search_limit,
+                "answer_source_limit": plan.answer_source_limit,
                 "target_sources": plan.target_sources,
                 "max_searches": plan.max_searches,
             },
@@ -179,14 +184,18 @@ async def _collect_sources(
 
     sources: list[AgentSource] = []
     for query in _search_queries(request, primary_query)[: plan.max_searches]:
-        more_sources = await _search_text(tools, actions, query, plan.limit, document_type)
+        more_sources = await _search_text(tools, actions, query, plan.search_limit, document_type)
         sources = _dedupe_sources([*sources, *more_sources])
         filtered_sources = _filter_sources_by_date(request, sources)
         if plan.depth != "deep" and len(filtered_sources) >= plan.target_sources:
             break
 
     sources = _apply_date_filter(request, sources, actions)
-    return sources[: plan.limit]
+    answer_sources = sources[: plan.answer_source_limit]
+    related_sources = sources[plan.answer_source_limit :]
+    if related_sources:
+        actions.append(AgentAction("rank_sources", {"used": len(answer_sources), "related": len(related_sources)}))
+    return answer_sources, related_sources
 
 
 async def _search_text(
@@ -208,22 +217,22 @@ def _retrieval_plan(request: AgentRequest) -> RetrievalPlan:
     depth = request.research_depth
 
     if depth == "quick":
-        return RetrievalPlan(depth=depth, limit=6, target_sources=4, max_searches=1, complexity=complexity)
+        return RetrievalPlan(depth=depth, search_limit=10, answer_source_limit=5, target_sources=4, max_searches=1, complexity=complexity)
 
     if depth == "deep":
-        limit = 24 if request.mode == "briefing" else 20
-        return RetrievalPlan(depth=depth, limit=limit, target_sources=12, max_searches=3, complexity=complexity)
+        search_limit = 40 if request.mode == "briefing" else 36
+        return RetrievalPlan(depth=depth, search_limit=search_limit, answer_source_limit=10, target_sources=12, max_searches=3, complexity=complexity)
 
     if complexity >= 4:
-        limit = 20 if request.mode == "briefing" else 18
-        return RetrievalPlan(depth=depth, limit=limit, target_sources=10, max_searches=3, complexity=complexity)
+        search_limit = 32 if request.mode == "briefing" else 28
+        return RetrievalPlan(depth=depth, search_limit=search_limit, answer_source_limit=10, target_sources=10, max_searches=3, complexity=complexity)
 
     if complexity >= 2:
-        limit = 16 if request.mode == "briefing" else 14
-        return RetrievalPlan(depth=depth, limit=limit, target_sources=8, max_searches=2, complexity=complexity)
+        search_limit = 24 if request.mode == "briefing" else 20
+        return RetrievalPlan(depth=depth, search_limit=search_limit, answer_source_limit=8, target_sources=8, max_searches=2, complexity=complexity)
 
-    limit = 10 if request.mode == "briefing" else 8
-    return RetrievalPlan(depth=depth, limit=limit, target_sources=5, max_searches=1, complexity=complexity)
+    search_limit = 16 if request.mode == "briefing" else 12
+    return RetrievalPlan(depth=depth, search_limit=search_limit, answer_source_limit=6, target_sources=5, max_searches=1, complexity=complexity)
 
 
 def _task_complexity(request: AgentRequest) -> int:
