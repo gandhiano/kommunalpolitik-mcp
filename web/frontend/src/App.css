@@ -375,30 +375,51 @@ textarea:focus,
   gap: 22px;
 }
 
-.source-detail-card {
+.context-card {
   position: sticky;
   top: 18px;
 }
 
-.source-detail-card h3 {
+.context-card h3 {
   margin: 8px 0 8px;
   color: #f7fee7;
   font-size: 1.18rem;
   letter-spacing: -0.02em;
 }
 
-.source-detail-card p {
+.context-card p {
   color: #bbf7d0;
 }
 
-.source-detail-card blockquote {
-  max-height: 360px;
-  overflow: auto;
-  margin: 14px 0;
-  border-left: 3px solid #bef264;
-  padding-left: 14px;
-  color: #dcfce7;
-  line-height: 1.55;
+.context-metrics {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.context-metrics span {
+  border: 1px solid rgba(190, 242, 100, 0.16);
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #d9f99d;
+  background: rgba(132, 204, 22, 0.08);
+  font-size: 0.86rem;
+}
+
+.next-action,
+.focused-source {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 14px;
+}
+
+.next-action strong,
+.focused-source strong {
+  color: #f7fee7;
+}
+
+.focused-source > p {
+  margin: 8px 0 10px;
 }
 
 .source-open-link {

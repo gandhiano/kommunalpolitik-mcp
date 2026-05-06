@@ -224,7 +224,7 @@ function Results({ response }: { response: AgentResponse }) {
       </article>
 
       <aside className="side-stack">
-        <SourceDetail source={activeSource} sourceIndex={activeSourceIndex + 1} />
+        <ContextBox response={response} source={activeSource} sourceIndex={activeSourceIndex + 1} />
 
         {response.related_sources.length > 0 && (
           <section className="source-card related-card">
@@ -293,33 +293,70 @@ function SourceList({ sources, onSourceFocus }: { sources: AgentSource[]; onSour
   )
 }
 
-function SourceDetail({ source, sourceIndex }: { source: AgentSource | null; sourceIndex: number }) {
-  if (!source) {
-    return (
-      <section className="source-card source-detail-card">
-        <p className="kicker">Quellendetail</p>
-        <p className="empty">Keine Quelle ausgewählt.</p>
-      </section>
-    )
-  }
+function ContextBox({ response, source, sourceIndex }: { response: AgentResponse; source: AgentSource | null; sourceIndex: number }) {
+  const retrievalPlan = response.actions_taken.find((action) => action.name === 'plan_retrieval')?.arguments
 
   return (
-    <section className="source-card source-detail-card">
-      <p className="kicker">Quellendetail</p>
-      <span className="source-meta">
-        <span className="source-number">[{sourceIndex}]</span>
-        {source.meeting_date ?? source.document_type ?? 'Quelle'}
-      </span>
-      <h3>{source.title ?? 'Unbenannte Quelle'}</h3>
-      {source.body_name && <p>{source.body_name}</p>}
-      {source.snippet && <blockquote>{source.snippet}</blockquote>}
-      {source.url && (
-        <a className="source-open-link" href={source.url} rel="noreferrer" target="_blank">
-          Original öffnen
-        </a>
+    <section className="source-card context-card">
+      <p className="kicker">Kontext</p>
+      <h3>{contextTitle(response.mode)}</h3>
+      <p>{extractTlDr(response.answer)}</p>
+
+      <div className="context-metrics">
+        <span>{response.sources.length} zitierte Quellen</span>
+        <span>{response.related_sources.length} weitere Treffer</span>
+        {typeof retrievalPlan?.depth === 'string' && <span>Tiefe: {depthLabel(retrievalPlan.depth)}</span>}
+      </div>
+
+      <div className="next-action">
+        <strong>Nächster sinnvoller Schritt</strong>
+        <p>{nextAction(response.mode)}</p>
+      </div>
+
+      {source && (
+        <div className="focused-source">
+          <strong>Aktuelle Quelle</strong>
+          <span className="source-meta">
+            <span className="source-number">[{sourceIndex}]</span>
+            {source.meeting_date ?? source.document_type ?? 'Quelle'}
+          </span>
+          <p>{source.title ?? 'Unbenannte Quelle'}</p>
+          {source.url && (
+            <a className="source-open-link" href={source.url} rel="noreferrer" target="_blank">
+              Original öffnen
+            </a>
+          )}
+        </div>
       )}
     </section>
   )
+}
+
+function contextTitle(mode: AgentMode) {
+  if (mode === 'briefing') return 'Kurzbriefing'
+  if (mode === 'motion_draft') return 'Antragskontext'
+  if (mode === 'follow_up') return 'Einordnung'
+  return 'TL;DR'
+}
+
+function nextAction(mode: AgentMode) {
+  if (mode === 'briefing') return 'Offene Punkte in konkrete Sitzungsfragen übersetzen und die wichtigsten TOPs prüfen.'
+  if (mode === 'motion_draft') return 'Beschlussvorschlag politisch schärfen und offene Prüfaufträge markieren.'
+  if (mode === 'follow_up') return 'Die stärksten Gegenargumente und fehlenden Belege gezielt nachrecherchieren.'
+  return 'Bei Bedarf auf „Gründlich“ wechseln oder eine engere Nachfrage zu einem Beleg stellen.'
+}
+
+function depthLabel(depth: string) {
+  if (depth === 'quick') return 'schnell'
+  if (depth === 'deep') return 'gründlich'
+  return 'auto'
+}
+
+function extractTlDr(answer: string) {
+  const lines = answer.split('\n').map((line) => line.trim()).filter(Boolean)
+  const content = lines.find((line) => !line.startsWith('#') && !line.startsWith('- ') && !/^\d+[.)]\s+/.test(line))
+  if (!content) return 'Die Antwort fasst die wichtigsten belegten Punkte aus den gefundenen Quellen zusammen.'
+  return content.replace(/\*\*/g, '').slice(0, 280)
 }
 
 function MarkdownText({
@@ -418,27 +455,34 @@ function parseBulletItems(lines: string[]) {
 function renderInline(text: string, sourceCount: number, onCitationFocus: (index: number) => void) {
   return text.split(/(\*\*[^*]+\*\*|\[\d+\])/g).map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={index}>{part.slice(2, -2)}</strong>
+      const content = part.slice(2, -2)
+      if (/^\[\d+\]$/.test(content)) {
+        return renderCitation(content, sourceCount, onCitationFocus, index)
+      }
+      return <strong key={index}>{content}</strong>
     }
     if (/^\[\d+\]$/.test(part)) {
-      const sourceIndex = Number(part.slice(1, -1))
-      if (sourceIndex >= 1 && sourceIndex <= sourceCount) {
-        return (
-          <a
-            className="citation-link"
-            href={`#source-${sourceIndex}`}
-            key={index}
-            onFocus={() => onCitationFocus(sourceIndex)}
-            onMouseEnter={() => onCitationFocus(sourceIndex)}
-            title={`Zur Quelle ${sourceIndex}`}
-          >
-            {part}
-          </a>
-        )
-      }
+      return renderCitation(part, sourceCount, onCitationFocus, index)
     }
     return <span key={index}>{part}</span>
   })
+}
+
+function renderCitation(text: string, sourceCount: number, onCitationFocus: (index: number) => void, key: number) {
+  const sourceIndex = Number(text.slice(1, -1))
+  if (sourceIndex < 1 || sourceIndex > sourceCount) return <span key={key}>{text}</span>
+  return (
+    <a
+      className="citation-link"
+      href={`#source-${sourceIndex}`}
+      key={key}
+      onFocus={() => onCitationFocus(sourceIndex)}
+      onMouseEnter={() => onCitationFocus(sourceIndex)}
+      title={`Zur Quelle ${sourceIndex}`}
+    >
+      {text}
+    </a>
+  )
 }
 
 function DraftPreview({ draft }: { draft: NonNullable<AgentResponse['draft']> }) {
