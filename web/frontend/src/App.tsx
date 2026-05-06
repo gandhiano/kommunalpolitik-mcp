@@ -186,38 +186,11 @@ function App() {
           </button>
 
           {error && <div className="error-box">{error}</div>}
-          {response && <InlineResult response={response} />}
         </div>
       </section>
 
       {response && <Results response={response} />}
     </main>
-  )
-}
-
-function InlineResult({ response }: { response: AgentResponse }) {
-  const firstSource = response.sources[0]
-
-  return (
-    <section className="inline-result" aria-live="polite">
-      <div>
-        <p className="kicker">Ergebnis</p>
-        <h3>{labelForMode(response.mode)}</h3>
-      </div>
-      <p>{firstSentence(response.answer)}</p>
-      <div className="result-metrics">
-        <span>{response.sources.length} Quellen</span>
-        <span>{response.actions_taken.length} Schritte</span>
-        <span>Provider: {response.provider}</span>
-      </div>
-      {firstSource && (
-        <a className="inline-source" href={firstSource.url ?? '#'} rel="noreferrer" target="_blank">
-          <span>Erste Fundstelle</span>
-          <strong>{firstSource.title ?? 'Unbenannte Quelle'}</strong>
-          {firstSource.meeting_date && <small>{firstSource.meeting_date}</small>}
-        </a>
-      )}
-    </section>
   )
 }
 
@@ -232,23 +205,11 @@ function Results({ response }: { response: AgentResponse }) {
           </div>
           <span className="provider-pill">{response.provider}</span>
         </div>
-        <pre>{response.answer}</pre>
+        <MarkdownText text={response.answer} />
         {response.draft && <DraftPreview draft={response.draft} />}
       </article>
 
       <aside className="side-stack">
-        <section className="trace-card">
-          <p className="kicker">Rechercheweg</p>
-          <ol>
-            {response.actions_taken.map((action, index) => (
-              <li key={`${action.name}-${index}`}>
-                <strong>{action.name}</strong>
-                <span>{JSON.stringify(action.arguments)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
         <section className="source-card">
           <p className="kicker">Quellen</p>
           <div className="sources">
@@ -269,9 +230,68 @@ function Results({ response }: { response: AgentResponse }) {
             {response.sources.length === 0 && <p className="empty">Keine Quellen gefunden.</p>}
           </div>
         </section>
+
+        <section className="trace-card">
+          <p className="kicker">Rechercheweg</p>
+          <ol>
+            {response.actions_taken.map((action, index) => (
+              <li key={`${action.name}-${index}`}>
+                <strong>{action.name}</strong>
+                <span>{JSON.stringify(action.arguments)}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
       </aside>
     </section>
   )
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
+
+  return (
+    <div className="markdown-answer">
+      {blocks.map((block, index) => {
+        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
+        const firstLine = lines[0] ?? ''
+
+        if (firstLine.startsWith('### ')) {
+          return <h4 key={index}>{renderInline(firstLine.slice(4))}</h4>
+        }
+        if (firstLine.startsWith('## ')) {
+          return <h3 key={index}>{renderInline(firstLine.slice(3))}</h3>
+        }
+        if (firstLine.startsWith('# ')) {
+          return <h3 key={index}>{renderInline(firstLine.slice(2))}</h3>
+        }
+        if (lines.every((line) => /^[-*]\s+/.test(line))) {
+          return (
+            <ul key={index}>
+              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''))}</li>)}
+            </ul>
+          )
+        }
+        if (lines.every((line) => /^\d+[.)]\s+/.test(line))) {
+          return (
+            <ol key={index}>
+              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''))}</li>)}
+            </ol>
+          )
+        }
+        return <p key={index}>{renderInline(lines.join(' '))}</p>
+      })}
+    </div>
+  )
+}
+
+function renderInline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>
+    }
+    return <span key={index}>{part}</span>
+  })
 }
 
 function DraftPreview({ draft }: { draft: NonNullable<AgentResponse['draft']> }) {
@@ -295,11 +315,6 @@ function labelForMode(mode: AgentMode) {
   if (mode === 'motion_draft') return 'Antragsvorbereitung'
   if (mode === 'follow_up') return 'Nachfrage'
   return 'Rechercheergebnis'
-}
-
-function firstSentence(text: string) {
-  const line = text.split('\n')[0]?.trim()
-  return line || text
 }
 
 export default App
