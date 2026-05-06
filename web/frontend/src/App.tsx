@@ -196,7 +196,7 @@ function Results({ response }: { response: AgentResponse }) {
           </div>
           <span className="provider-pill">{response.provider}</span>
         </div>
-        <MarkdownText text={response.answer} />
+        <MarkdownText sourceCount={response.sources.length} text={response.answer} />
         {response.draft && <DraftPreview draft={response.draft} />}
       </article>
 
@@ -208,11 +208,15 @@ function Results({ response }: { response: AgentResponse }) {
               <a
                 className="source-item"
                 href={source.url ?? '#'}
+                id={`source-${index + 1}`}
                 key={`${source.document_id}-${index}`}
                 rel="noreferrer"
                 target="_blank"
               >
-                <span>{source.meeting_date ?? source.document_type ?? 'Quelle'}</span>
+                <span className="source-meta">
+                  <span className="source-number">[{index + 1}]</span>
+                  {source.meeting_date ?? source.document_type ?? 'Quelle'}
+                </span>
                 <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
                 <small>{source.body_name}</small>
                 {source.snippet && <p>{source.snippet}</p>}
@@ -238,7 +242,7 @@ function Results({ response }: { response: AgentResponse }) {
   )
 }
 
-function MarkdownText({ text }: { text: string }) {
+function MarkdownText({ sourceCount, text }: { sourceCount: number; text: string }) {
   const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
 
   return (
@@ -248,48 +252,68 @@ function MarkdownText({ text }: { text: string }) {
         const firstLine = lines[0] ?? ''
 
         if (firstLine.startsWith('### ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" />
+          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" sourceCount={sourceCount} />
         }
         if (firstLine.startsWith('## ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" />
+          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" sourceCount={sourceCount} />
         }
         if (firstLine.startsWith('# ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" />
+          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" sourceCount={sourceCount} />
         }
         if (lines.every((line) => /^[-*]\s+/.test(line))) {
           return (
             <ul key={index}>
-              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''))}</li>)}
+              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceCount)}</li>)}
             </ul>
           )
         }
         if (lines.every((line) => /^\d+[.)]\s+/.test(line))) {
           return (
             <ol key={index}>
-              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''))}</li>)}
+              {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceCount)}</li>)}
             </ol>
           )
         }
-        return <p key={index}>{renderInline(lines.join(' '))}</p>
+        return <p key={index}>{renderInline(lines.join(' '), sourceCount)}</p>
       })}
     </div>
   )
 }
 
-function BlockWithHeading({ heading, lines, level }: { heading: string; lines: string[]; level: 'h3' | 'h4' }) {
+function BlockWithHeading({
+  heading,
+  lines,
+  level,
+  sourceCount,
+}: {
+  heading: string
+  lines: string[]
+  level: 'h3' | 'h4'
+  sourceCount: number
+}) {
   const Heading = level
   return (
     <div>
-      <Heading>{renderInline(heading)}</Heading>
-      {lines.length > 0 && <p>{renderInline(lines.join(' '))}</p>}
+      <Heading>{renderInline(heading, sourceCount)}</Heading>
+      {lines.length > 0 && <p>{renderInline(lines.join(' '), sourceCount)}</p>}
     </div>
   )
 }
 
-function renderInline(text: string) {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+function renderInline(text: string, sourceCount: number) {
+  return text.split(/(\*\*[^*]+\*\*|\[\d+\])/g).map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={index}>{part.slice(2, -2)}</strong>
+    }
+    if (/^\[\d+\]$/.test(part)) {
+      const sourceIndex = Number(part.slice(1, -1))
+      if (sourceIndex >= 1 && sourceIndex <= sourceCount) {
+        return (
+          <a className="citation-link" href={`#source-${sourceIndex}`} key={index} title={`Zur Quelle ${sourceIndex}`}>
+            {part}
+          </a>
+        )
+      }
     }
     return <span key={index}>{part}</span>
   })

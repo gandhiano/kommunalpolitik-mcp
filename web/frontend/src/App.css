@@ -238,6 +238,7 @@ textarea {
 textarea:focus,
 .mode-card:focus-visible,
 .run-button:focus-visible,
+.citation-link:focus-visible,
 .examples button:focus-visible {
   outline: 3px solid rgba(190, 242, 100, 0.45);
   outline-offset: 2px;
@@ -341,6 +342,27 @@ textarea:focus,
   color: #f7fee7;
 }
 
+.citation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.85em;
+  margin: 0 0.12em;
+  border: 1px solid rgba(190, 242, 100, 0.38);
+  border-radius: 999px;
+  color: #062015;
+  background: #bef264;
+  font-size: 0.82em;
+  font-weight: 850;
+  line-height: 1.35;
+  text-decoration: none;
+  vertical-align: 0.08em;
+}
+
+.citation-link:hover {
+  background: #d9f99d;
+}
+
 .side-stack {
   display: grid;
   width: min(420px, 100%);
@@ -380,12 +402,33 @@ textarea:focus,
 .source-item {
   flex-direction: column;
   gap: 6px;
+  scroll-margin-top: 18px;
   color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
   padding: 14px;
   text-decoration: none;
   background: rgba(255, 255, 255, 0.045);
+}
+
+.source-item:target {
+  border-color: rgba(190, 242, 100, 0.75);
+  background: rgba(132, 204, 22, 0.16);
+  box-shadow: 0 0 0 3px rgba(190, 242, 100, 0.12);
+}
+
+.source-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-number {
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #062015 !important;
+  background: #bef264;
+  letter-spacing: 0;
 }
 
 .source-item strong {
