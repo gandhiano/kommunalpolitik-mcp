@@ -299,7 +299,6 @@ function ContextBox({ response, source, sourceIndex }: { response: AgentResponse
   return (
     <section className="source-card context-card">
       <p className="kicker">Kontext</p>
-      <h3>{contextTitle(response.mode)}</h3>
       <p>{extractTlDr(response.answer)}</p>
 
       <div className="context-metrics">
@@ -308,14 +307,8 @@ function ContextBox({ response, source, sourceIndex }: { response: AgentResponse
         {typeof retrievalPlan?.depth === 'string' && <span>Tiefe: {depthLabel(retrievalPlan.depth)}</span>}
       </div>
 
-      <div className="next-action">
-        <strong>Nächster sinnvoller Schritt</strong>
-        <p>{nextAction(response.mode)}</p>
-      </div>
-
       {source && (
         <div className="focused-source">
-          <strong>Aktuelle Quelle</strong>
           <span className="source-meta">
             <span className="source-number">[{sourceIndex}]</span>
             {source.meeting_date ?? source.document_type ?? 'Quelle'}
@@ -330,20 +323,6 @@ function ContextBox({ response, source, sourceIndex }: { response: AgentResponse
       )}
     </section>
   )
-}
-
-function contextTitle(mode: AgentMode) {
-  if (mode === 'briefing') return 'Kurzbriefing'
-  if (mode === 'motion_draft') return 'Antragskontext'
-  if (mode === 'follow_up') return 'Einordnung'
-  return 'TL;DR'
-}
-
-function nextAction(mode: AgentMode) {
-  if (mode === 'briefing') return 'Offene Punkte in konkrete Sitzungsfragen übersetzen und die wichtigsten TOPs prüfen.'
-  if (mode === 'motion_draft') return 'Beschlussvorschlag politisch schärfen und offene Prüfaufträge markieren.'
-  if (mode === 'follow_up') return 'Die stärksten Gegenargumente und fehlenden Belege gezielt nachrecherchieren.'
-  return 'Bei Bedarf auf „Gründlich“ wechseln oder eine engere Nachfrage zu einem Beleg stellen.'
 }
 
 function depthLabel(depth: string) {
