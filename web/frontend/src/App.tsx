@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 type AgentMode = 'research' | 'briefing' | 'motion_draft' | 'follow_up'
@@ -32,6 +32,12 @@ interface AgentResponse {
     precedent_count?: number
   }
   provider: string
+  model_metadata: Record<string, unknown>
+}
+
+interface AuthStatus {
+  authenticated: boolean
+  auth_enabled: boolean
 }
 
 const modes: Array<{
@@ -78,12 +84,43 @@ const examples = [
 ]
 
 function App() {
+  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null)
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState<string | null>(null)
   const [mode, setMode] = useState<AgentMode>('research')
   const [task, setTask] = useState(modes[0].prompt)
   const [researchDepth, setResearchDepth] = useState<ResearchDepth>('auto')
   const [response, setResponse] = useState<AgentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    async function loadAuthStatus() {
+      try {
+        const res = await fetch('/auth/status')
+        setAuthStatus((await res.json()) as AuthStatus)
+      } catch {
+        setAuthStatus({ authenticated: true, auth_enabled: false })
+      }
+    }
+
+    void loadAuthStatus()
+  }, [])
+
+  async function login() {
+    setAuthError(null)
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    if (!res.ok) {
+      setAuthError(await responseError(res))
+      return
+    }
+    setPassword('')
+    setAuthStatus((await res.json()) as AuthStatus)
+  }
 
   async function runAgent() {
     if (task.trim().length < 3) return
@@ -96,7 +133,10 @@ function App() {
         body: JSON.stringify({ task: task.trim(), mode, research_depth: researchDepth }),
       })
       if (!res.ok) {
-        throw new Error(await res.text())
+        if (res.status === 401) {
+          setAuthStatus({ authenticated: false, auth_enabled: true })
+        }
+        throw new Error(await responseError(res))
       }
       setResponse((await res.json()) as AgentResponse)
     } catch (err) {
@@ -107,6 +147,49 @@ function App() {
   }
 
   const activeMode = modes.find((candidate) => candidate.id === mode) ?? modes[0]
+
+  if (!authStatus) {
+    return (
+      <main className="shell auth-shell">
+        <section className="login-card">
+          <div className="brandline">
+            <span className="brandmark">KP</span>
+            <span>Kommunalpolitik Workbench</span>
+          </div>
+          <p className="lead">Zugang wird geprüft ...</p>
+        </section>
+      </main>
+    )
+  }
+
+  if (authStatus.auth_enabled && !authStatus.authenticated) {
+    return (
+      <main className="shell auth-shell">
+        <section className="login-card">
+          <div className="brandline">
+            <span className="brandmark">KP</span>
+            <span>Kommunalpolitik Workbench</span>
+          </div>
+          <p className="kicker">Pilot-Zugang</p>
+          <h1>Geschützter Arbeitsbereich für die erste Nutzung.</h1>
+          <p className="lead">Melde dich mit dem Pilot-Passwort an. LLM-Schlüssel und kommunale Daten bleiben serverseitig.</p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              void login()
+            }}
+          >
+            <label>
+              Passwort
+              <input autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
+            </label>
+            <button className="run-button" type="submit">Einloggen</button>
+          </form>
+          {authError && <div className="error-box">{authError}</div>}
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className="shell">
@@ -191,12 +274,12 @@ function App() {
         </div>
       </section>
 
-      {response && <Results response={response} />}
+      {response && <Results researchDepth={researchDepth} requestTask={task} response={response} />}
     </main>
   )
 }
 
-function Results({ response }: { response: AgentResponse }) {
+function Results({ researchDepth, requestTask, response }: { researchDepth: ResearchDepth; requestTask: string; response: AgentResponse }) {
   const [activeSourceIndex, setActiveSourceIndex] = useState(0)
   const activeSource = response.sources[activeSourceIndex] ?? response.sources[0] ?? null
 
@@ -215,6 +298,7 @@ function Results({ response }: { response: AgentResponse }) {
           sourceCount={response.sources.length}
           text={response.answer}
         />
+        <FeedbackBox requestTask={requestTask} researchDepth={researchDepth} response={response} />
         {response.draft && <DraftPreview draft={response.draft} />}
 
         <section className="used-sources-section">
@@ -261,6 +345,70 @@ function Results({ response }: { response: AgentResponse }) {
           </ol>
         </section>
       </aside>
+    </section>
+  )
+}
+
+function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: string; researchDepth: ResearchDepth; response: AgentResponse }) {
+  const [rating, setRating] = useState<'up' | 'down' | null>(null)
+  const [comment, setComment] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submitFeedback(nextRating: 'up' | 'down') {
+    setRating(nextRating)
+    setSubmitting(true)
+    setStatus(null)
+    try {
+      const res = await fetch('/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating: nextRating,
+          comment,
+          task: requestTask,
+          answer: response.answer,
+          mode: response.mode,
+          research_depth: researchDepth,
+          provider: response.provider,
+          model_metadata: response.model_metadata,
+          actions_taken: response.actions_taken,
+          sources: response.sources,
+          related_sources: response.related_sources,
+        }),
+      })
+      if (!res.ok) throw new Error(await responseError(res))
+      setStatus(nextRating === rating ? 'Kommentar aktualisiert. Danke.' : 'Danke. Du kannst optional noch kurz ergänzen, was gut war oder fehlt.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Feedback konnte nicht gespeichert werden.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="feedback-box" aria-label="Antwort bewerten">
+      <div>
+        <p className="kicker">Feedback</p>
+        <p className="feedback-privacy">Mit Klick sendest Du anonym Frage, Antwort, Quellen-Metadaten und Bewertung zur Auswertung und Verbesserung.</p>
+      </div>
+      <div className="feedback-actions">
+        <button aria-label="Antwort hilfreich bewerten" className={rating === 'up' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('up')} type="button">
+          <span aria-hidden="true" className="thumb-icon">👍</span>
+          <span>Hilfreich</span>
+        </button>
+        <button aria-label="Antwort nicht hilfreich bewerten" className={rating === 'down' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('down')} type="button">
+          <span aria-hidden="true" className="thumb-icon">👎</span>
+          <span>Nicht hilfreich</span>
+        </button>
+      </div>
+      {rating && (
+        <div className="feedback-comment">
+          <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Optional: Was war gut, falsch oder fehlt?" rows={3} />
+          <button disabled={submitting || comment.trim().length === 0} onClick={() => void submitFeedback(rating)} type="button">Kommentar senden</button>
+        </div>
+      )}
+      {status && <p className="feedback-status">{status}</p>}
     </section>
   )
 }
@@ -485,6 +633,16 @@ function labelForMode(mode: AgentMode) {
   if (mode === 'motion_draft') return 'Antragsvorbereitung'
   if (mode === 'follow_up') return 'Nachfrage'
   return 'Rechercheergebnis'
+}
+
+async function responseError(res: Response) {
+  const text = await res.text()
+  try {
+    const payload = JSON.parse(text) as { error?: string }
+    return payload.error || text
+  } catch {
+    return text || `HTTP ${res.status}`
+  }
 }
 
 export default App
