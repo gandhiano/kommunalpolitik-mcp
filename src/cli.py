@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 
-from . import http_server, mcp_server, smoke_http
+from . import feedback, http_server, mcp_server, smoke_http
 from .agent import evaluate
 from .ingest import witzenhausen
 
@@ -17,6 +17,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     subparsers.add_parser("http", help="Start the MCP streamable HTTP server")
     subparsers.add_parser("smoke-http", help="Smoke test an MCP streamable HTTP server")
     subparsers.add_parser("eval-agent", help="Run local agent quality evals")
+    subparsers.add_parser("feedback-report", help="Summarize local pilot feedback")
 
     ingest = subparsers.add_parser("ingest", help="Run ingestion commands")
     ingest_subparsers = ingest.add_subparsers(dest="municipality", required=True)
@@ -31,5 +32,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         smoke_http.main(remaining)
     elif args.command == "eval-agent":
         evaluate.main(remaining)
+    elif args.command == "feedback-report":
+        feedback.main(remaining)
     elif args.command == "ingest" and args.municipality == "witzenhausen":
         witzenhausen.main(remaining)
