@@ -7,11 +7,41 @@
 .workspace,
 .answer-card,
 .trace-card,
-.source-card {
+.source-card,
+.login-card {
   border: 1px solid rgba(255, 255, 255, 0.11);
   background: rgba(13, 31, 25, 0.78);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(24px);
+}
+
+.auth-shell {
+  display: grid;
+  place-items: center;
+}
+
+.login-card {
+  width: min(760px, 100%);
+  border-radius: 34px;
+  padding: 28px;
+}
+
+.login-card h1 {
+  margin-top: 60px;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+}
+
+.login-card form {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.login-card label {
+  display: grid;
+  gap: 8px;
+  color: #bbf7d0;
+  font-weight: 700;
 }
 
 .hero-panel {
@@ -210,12 +240,14 @@ h2 {
 
 select,
 textarea,
+input,
 button {
   font: inherit;
 }
 
 select,
-textarea {
+textarea,
+input {
   color: #f7fee7;
   border: 1px solid rgba(255, 255, 255, 0.13);
   background: rgba(3, 20, 14, 0.74);
@@ -224,6 +256,11 @@ textarea {
 select {
   border-radius: 12px;
   padding: 8px 10px;
+}
+
+input {
+  border-radius: 16px;
+  padding: 13px 14px;
 }
 
 textarea {
@@ -236,10 +273,12 @@ textarea {
 }
 
 textarea:focus,
+input:focus,
 .mode-card:focus-visible,
 .run-button:focus-visible,
 .citation-link:focus-visible,
-.examples button:focus-visible {
+.examples button:focus-visible,
+.feedback-actions button:focus-visible {
   outline: 3px solid rgba(190, 242, 100, 0.45);
   outline-offset: 2px;
 }
@@ -348,6 +387,110 @@ textarea:focus,
 
 .markdown-answer strong {
   color: #f7fee7;
+}
+
+.feedback-box {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  border: 1px solid rgba(190, 242, 100, 0.16);
+  border-radius: 20px;
+  padding: 16px;
+  background: rgba(132, 204, 22, 0.07);
+}
+
+.feedback-box p {
+  margin-bottom: 0;
+  color: #bbf7d0;
+  font-size: 0.92rem;
+}
+
+.feedback-box .feedback-privacy {
+  max-width: 680px;
+  color: #86efac;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feedback-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(190, 242, 100, 0.22);
+  border-radius: 999px;
+  padding: 8px 12px 8px 9px;
+  color: #d9f99d;
+  background: rgba(3, 20, 14, 0.42);
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.feedback-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(190, 242, 100, 0.5);
+  background: rgba(132, 204, 22, 0.15);
+}
+
+.feedback-actions button.selected {
+  color: #062015;
+  background: #bef264;
+}
+
+.thumb-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.feedback-actions button.selected .thumb-icon {
+  background: rgba(6, 32, 21, 0.13);
+}
+
+.feedback-comment {
+  display: grid;
+  gap: 8px;
+  animation: feedbackReveal 180ms ease-out;
+}
+
+.feedback-comment button {
+  justify-self: start;
+  border: 1px solid rgba(190, 242, 100, 0.25);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #d9f99d;
+  background: rgba(132, 204, 22, 0.09);
+  cursor: pointer;
+}
+
+.feedback-comment button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.feedback-status {
+  color: #d9f99d !important;
+}
+
+@keyframes feedbackReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .citation-link {
