@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
+import hmac
+import json
+import os
+import secrets
+import sqlite3
+import time
 from collections.abc import AsyncIterator, Sequence
+from pathlib import Path
+from typing import Any
 
 import uvicorn
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import FileResponse, JSONResponse
 from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
 from .agent import AgentRequest, run_agent
@@ -21,6 +31,8 @@ from .mcp_server import server
 
 AGENT_MODES = {"research", "briefing", "motion_draft", "follow_up"}
 RESEARCH_DEPTHS = {"quick", "auto", "deep"}
+SESSION_COOKIE = "kommunalpolitik_session"
+SESSION_TTL_SECONDS = 60 * 60 * 12
 
 
 def create_app(stateless: bool = True, json_response: bool = False) -> Starlette:
@@ -36,6 +48,10 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             yield
 
     async def handle_mcp(scope: Scope, receive: Receive, send: Send) -> None:
+        if not _mcp_enabled():
+            response = JSONResponse({"error": "Not found"}, status_code=404)
+            await response(scope, receive, send)
+            return
         if scope["type"] == "http" and scope.get("path") in {"/mcp", "/mcp/"}:
             await session_manager.handle_request(scope, receive, send)
             return
@@ -45,7 +61,41 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
     async def health(_: Request) -> JSONResponse:
         return JSONResponse({"status": "ok", "transport": "streamable-http"})
 
+    async def auth_status(request: Request) -> JSONResponse:
+        return JSONResponse({"authenticated": _is_authenticated(request), "auth_enabled": _auth_enabled()})
+
+    async def login(request: Request) -> JSONResponse:
+        if not _auth_enabled():
+            return JSONResponse({"authenticated": True, "auth_enabled": False})
+        try:
+            payload = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
+
+        password = str(payload.get("password") or "")
+        if not hmac.compare_digest(password, os.environ.get("KOMMUNALPOLITIK_AUTH_PASSWORD", "")):
+            return JSONResponse({"error": "Invalid password"}, status_code=401)
+
+        response = JSONResponse({"authenticated": True, "auth_enabled": True})
+        response.set_cookie(
+            SESSION_COOKIE,
+            _sign_session(int(time.time())),
+            httponly=True,
+            secure=_secure_cookies(),
+            samesite="lax",
+            max_age=SESSION_TTL_SECONDS,
+            path="/",
+        )
+        return response
+
+    async def logout(_: Request) -> JSONResponse:
+        response = JSONResponse({"authenticated": False})
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        return response
+
     async def agent(request: Request) -> JSONResponse:
+        if not _is_authenticated(request):
+            return JSONResponse({"error": "Authentication required"}, status_code=401)
         try:
             payload = await request.json()
         except Exception:
@@ -80,15 +130,179 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
             return JSONResponse({"error": exc.message}, status_code=exc.status_code)
         return JSONResponse(response.to_dict())
 
+    async def feedback(request: Request) -> JSONResponse:
+        if not _is_authenticated(request):
+            return JSONResponse({"error": "Authentication required"}, status_code=401)
+        try:
+            payload = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
+
+        rating = str(payload.get("rating") or "").strip().lower()
+        if rating not in {"up", "down"}:
+            return JSONResponse({"error": "Field 'rating' must be 'up' or 'down'"}, status_code=400)
+        task = str(payload.get("task") or "").strip()
+        answer = str(payload.get("answer") or "").strip()
+        if not task or not answer:
+            return JSONResponse({"error": "Fields 'task' and 'answer' are required"}, status_code=400)
+
+        feedback_id = _store_feedback(
+            {
+                "rating": rating,
+                "comment": str(payload.get("comment") or "").strip()[:4000],
+                "task": task[:12000],
+                "answer": answer[:50000],
+                "mode": str(payload.get("mode") or "")[:80],
+                "research_depth": str(payload.get("research_depth") or "")[:80],
+                "provider": str(payload.get("provider") or "")[:120],
+                "model_metadata": payload.get("model_metadata") if isinstance(payload.get("model_metadata"), dict) else {},
+                "actions_taken": payload.get("actions_taken") if isinstance(payload.get("actions_taken"), list) else [],
+                "sources": payload.get("sources") if isinstance(payload.get("sources"), list) else [],
+                "related_sources": payload.get("related_sources") if isinstance(payload.get("related_sources"), list) else [],
+            }
+        )
+        return JSONResponse({"status": "ok", "feedback_id": feedback_id})
+
+    routes = [
+        Route("/health", endpoint=health, methods=["GET"]),
+        Route("/auth/status", endpoint=auth_status, methods=["GET"]),
+        Route("/auth/login", endpoint=login, methods=["POST"]),
+        Route("/auth/logout", endpoint=logout, methods=["POST"]),
+        Route("/agent", endpoint=agent, methods=["POST"]),
+        Route("/feedback", endpoint=feedback, methods=["POST"]),
+    ]
+    routes.extend(_frontend_routes())
+    routes.append(Mount("/", app=handle_mcp))
+
     return Starlette(
         debug=False,
         lifespan=lifespan,
-        routes=[
-            Route("/health", endpoint=health, methods=["GET"]),
-            Route("/agent", endpoint=agent, methods=["POST"]),
-            Mount("/", app=handle_mcp),
-        ],
+        routes=routes,
     )
+
+
+def _auth_enabled() -> bool:
+    return bool(os.environ.get("KOMMUNALPOLITIK_AUTH_PASSWORD"))
+
+
+def _secure_cookies() -> bool:
+    return os.environ.get("KOMMUNALPOLITIK_SECURE_COOKIES", "true").strip().lower() not in {"0", "false", "no"}
+
+
+def _mcp_enabled() -> bool:
+    return os.environ.get("KOMMUNALPOLITIK_MCP_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+
+
+def _frontend_routes() -> list[Any]:
+    dist = Path(os.environ.get("KOMMUNALPOLITIK_WEB_DIST", "web/frontend/dist"))
+    index = dist / "index.html"
+    if not index.exists():
+        return []
+
+    async def frontend(_: Request) -> FileResponse:
+        return FileResponse(index)
+
+    routes: list[Any] = [Route("/", endpoint=frontend, methods=["GET"])]
+    assets = dist / "assets"
+    if assets.exists():
+        routes.append(Mount("/assets", app=StaticFiles(directory=assets)))
+    for name in ("favicon.svg", "icons.svg"):
+        static_file = dist / name
+        if static_file.exists():
+            async def static_endpoint(_: Request, file_path: Path = static_file) -> FileResponse:
+                return FileResponse(file_path)
+
+            routes.append(Route(f"/{name}", endpoint=static_endpoint, methods=["GET"]))
+    return routes
+
+
+def _is_authenticated(request: Request) -> bool:
+    if not _auth_enabled():
+        return True
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return False
+    return _verify_session(token)
+
+
+def _session_secret() -> str:
+    secret = os.environ.get("KOMMUNALPOLITIK_SESSION_SECRET")
+    if secret:
+        return secret
+    if _auth_enabled():
+        return os.environ["KOMMUNALPOLITIK_AUTH_PASSWORD"]
+    return secrets.token_hex(32)
+
+
+def _sign_session(created_at: int) -> str:
+    payload = str(created_at)
+    signature = hmac.new(_session_secret().encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def _verify_session(token: str) -> bool:
+    try:
+        payload, signature = token.split(".", 1)
+        created_at = int(payload)
+    except ValueError:
+        return False
+    if time.time() - created_at > SESSION_TTL_SECONDS:
+        return False
+    expected = hmac.new(_session_secret().encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+
+def _feedback_path() -> Path:
+    return Path(os.environ.get("KOMMUNALPOLITIK_FEEDBACK_PATH", "data/feedback.sqlite"))
+
+
+def _store_feedback(payload: dict[str, Any]) -> int:
+    path = _feedback_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at INTEGER NOT NULL,
+                rating TEXT NOT NULL,
+                comment TEXT NOT NULL,
+                task TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                research_depth TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model_metadata TEXT NOT NULL,
+                actions_taken TEXT NOT NULL,
+                sources TEXT NOT NULL,
+                related_sources TEXT NOT NULL
+            )
+            """
+        )
+        cursor = connection.execute(
+            """
+            INSERT INTO feedback (
+                created_at, rating, comment, task, answer, mode, research_depth, provider,
+                model_metadata, actions_taken, sources, related_sources
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                int(time.time()),
+                payload["rating"],
+                payload["comment"],
+                payload["task"],
+                payload["answer"],
+                payload["mode"],
+                payload["research_depth"],
+                payload["provider"],
+                json.dumps(payload["model_metadata"], ensure_ascii=False),
+                json.dumps(payload["actions_taken"], ensure_ascii=False),
+                json.dumps(payload["sources"], ensure_ascii=False),
+                json.dumps(payload["related_sources"], ensure_ascii=False),
+            ),
+        )
+        connection.commit()
+        return int(cursor.lastrowid)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
