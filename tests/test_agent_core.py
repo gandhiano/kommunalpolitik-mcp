@@ -85,6 +85,21 @@ class ManySourcesTools(FakeTools):
         ]
 
 
+class MixedBodiesTools(FakeTools):
+    async def search_text(
+        self,
+        query: str,
+        limit: int,
+        document_type: str | None = None,
+    ) -> list[AgentSource]:
+        self.calls.append(("search_text", {"query": query, "limit": limit, "document_type": document_type}))
+        return [
+            AgentSource(title="Ortsbeirat Verkehr", url="https://example.invalid/ob", body_name="Ortsbeirat Wendershausen"),
+            AgentSource(title="StVV Verkehr", url="https://example.invalid/stvv", body_name="Stadtverordnetenversammlung"),
+            AgentSource(title="Ausschuss Verkehr", url="https://example.invalid/ausschuss", body_name="Stadtentwicklungs-, Umwelt- und Energieausschuss"),
+        ]
+
+
 def test_research_mode_returns_sources_and_actions() -> None:
     tools = FakeTools()
     response = asyncio.run(
@@ -249,3 +264,34 @@ def test_briefing_with_meeting_id_loads_meeting() -> None:
     assert tools.calls[0] == ("get_meeting", {"meeting_id": "meeting-1"})
     assert tools.calls[1] == ("search_text", {"query": "TOP 7", "limit": 24, "document_type": None})
     assert tools.calls[2] == ("search_text", {"query": "TOP", "limit": 24, "document_type": None})
+
+
+def test_briefing_without_meeting_intent_does_not_select_next_meeting() -> None:
+    tools = FakeTools()
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(task="Finde frühere Anträge der Grünen zum Thema Verkehr", mode="briefing"),
+            tools=tools,
+        )
+    )
+
+    assert "list_meetings" not in [action.name for action in response.actions_taken]
+    assert "select_meeting" not in [action.name for action in response.actions_taken]
+    assert tools.calls[0] == ("search_text", {"query": "Finde frühere Anträge der Grünen zum Thema Verkehr", "limit": 24, "document_type": None})
+
+
+def test_citywide_fraction_queries_prioritize_stvv_over_ortsbeirat() -> None:
+    tools = MixedBodiesTools()
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(task="Finde frühere Anträge der Grünen zum Thema Verkehr", mode="research"),
+            tools=tools,
+        )
+    )
+
+    assert [source.body_name for source in response.sources[:3]] == [
+        "Stadtverordnetenversammlung",
+        "Stadtentwicklungs-, Umwelt- und Energieausschuss",
+        "Ortsbeirat Wendershausen",
+    ]
+    assert response.actions_taken[-1].name == "prioritize_sources"
