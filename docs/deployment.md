@@ -66,6 +66,22 @@ KOMMUNALPOLITIK_MODEL_STRONG=STRONGER_MODEL
 
 `quick` research uses the quick model. `deep`, motion drafts, and follow-up tasks use the strong model. Other requests use the balanced model or the default fallback.
 
+## Server-Side Agent Runtime
+
+With a configured LLM provider, the public web `/agent` endpoint uses a server-side tool-loop agent by default. The browser sends the task, while the backend LLM chooses allowed local tool calls (`search_text`, `list_meetings`, `get_meeting`) step by step and then returns the final answer.
+
+```env
+KOMMUNALPOLITIK_AGENT_RUNTIME=tool-loop
+```
+
+The Python HTTP layer remains the web/auth/cost/feedback boundary and executes only allowed local tools. It does not expose MCP directly to public users. For deterministic local debugging without LLM tool-loop behavior, set:
+
+```env
+KOMMUNALPOLITIK_AGENT_RUNTIME=deterministic
+```
+
+When `KOMMUNALPOLITIK_LLM_PROVIDER=none`, deterministic retrieval is always used.
+
 Example remote MCP client configuration:
 
 ```json
