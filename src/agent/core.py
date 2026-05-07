@@ -122,7 +122,7 @@ async def run_agent(
         actions.append(AgentAction("get_meeting", {"meeting_id": request.meeting_id}))
         context["meeting"] = await tools.get_meeting(request.meeting_id)
         sources, related_sources = await _collect_sources(request, tools, actions)
-    elif request.mode == "briefing":
+    elif request.mode == "briefing" and _should_select_meeting_for_briefing(request):
         meeting_limit = 80
         actions.append(AgentAction("list_meetings", {"limit": meeting_limit}))
         context["meetings"] = await tools.list_meetings(limit=meeting_limit)
@@ -225,6 +225,11 @@ def _select_meeting_for_briefing(request: AgentRequest, meetings: list[dict[str,
     return {**selected, "selection": "latest_available_no_upcoming_found"}
 
 
+def _should_select_meeting_for_briefing(request: AgentRequest) -> bool:
+    task = request.task.lower()
+    return any(term in task for term in ("nächste", "naechste", "sitzung", "tagesordnung", "top ", " stvv", "stadtverordnetenversammlung"))
+
+
 def _body_hint(task: str) -> str | None:
     lowered = task.lower()
     if "stadtverordnetenversammlung" in lowered or "stvv" in lowered:
@@ -264,7 +269,7 @@ async def _collect_sources(
         if plan.depth != "deep" and len(filtered_sources) >= plan.target_sources:
             break
 
-    sources = _apply_date_filter(request, sources, actions)
+    sources = _prioritize_sources(request, _apply_date_filter(request, sources, actions), actions)
     answer_sources = sources[: plan.answer_source_limit]
     related_sources = sources[plan.answer_source_limit :]
     if related_sources:
@@ -398,6 +403,39 @@ def _apply_date_filter(
     if removed:
         actions.append(AgentAction("filter_sources", {"meeting_date_from": f"{start_year}-01-01", "removed": removed}))
     return filtered
+
+
+def _prioritize_sources(
+    request: AgentRequest,
+    sources: list[AgentSource],
+    actions: list[AgentAction],
+) -> list[AgentSource]:
+    if not _prefers_citywide_sources(request.task):
+        return sources
+    ranked = sorted(enumerate(sources), key=lambda item: (_citywide_rank(item[1]), item[0]))
+    prioritized = [source for _, source in ranked]
+    if prioritized != sources:
+        actions.append(AgentAction("prioritize_sources", {"preference": "citywide", "count": len(sources)}))
+    return prioritized
+
+
+def _prefers_citywide_sources(task: str) -> bool:
+    lowered = task.lower()
+    return (
+        any(term in lowered for term in ("fraktion", "grünen", "gruenen", "bündnis", "buendnis", "antrag", "anträge", "antraege"))
+        and "ortsbeirat" not in lowered
+    )
+
+
+def _citywide_rank(source: AgentSource) -> int:
+    body = (source.body_name or "").lower()
+    if "stadtverordnetenversammlung" in body:
+        return 0
+    if body and "ortsbeirat" not in body:
+        return 1
+    if not body:
+        return 2
+    return 3
 
 
 def _filter_sources_by_date(request: AgentRequest, sources: list[AgentSource]) -> list[AgentSource]:
