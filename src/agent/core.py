@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from datetime import date
 import json
+import os
 import re
 from typing import Any, Literal, Protocol
 
@@ -118,6 +119,9 @@ async def run_agent(
     actions: list[AgentAction] = []
     context: dict[str, Any] = {"actions_taken": actions}
 
+    if _uses_tool_loop(provider):
+        return await _run_tool_loop(request, tools, provider, actions, context)
+
     if request.mode == "briefing" and request.meeting_id:
         actions.append(AgentAction("get_meeting", {"meeting_id": request.meeting_id}))
         context["meeting"] = await tools.get_meeting(request.meeting_id)
@@ -153,6 +157,140 @@ async def run_agent(
 
     context["related_sources"] = related_sources
     return await provider.generate(request, sources, context)
+
+
+def _uses_tool_loop(provider: Any) -> bool:
+    runtime = os.environ.get("KOMMUNALPOLITIK_AGENT_RUNTIME", "tool-loop").strip().lower()
+    return runtime in {"tool-loop", "agent", "agentic"} and getattr(provider, "name", "none") != "none" and hasattr(provider, "next_agent_step")
+
+
+async def _run_tool_loop(
+    request: AgentRequest,
+    tools: AgentTools,
+    provider: Any,
+    actions: list[AgentAction],
+    context: dict[str, Any],
+) -> AgentResponse:
+    transcript: list[dict[str, Any]] = []
+    sources: list[AgentSource] = []
+    related_sources: list[AgentSource] = []
+    step_limit = _tool_loop_step_limit(request)
+    actions.append(AgentAction("agent_start", {"runtime": "tool-loop", "max_steps": step_limit}))
+
+    for step in range(1, step_limit + 1):
+        decision = _validate_agent_decision(await provider.next_agent_step(request, transcript, sources, context), request)
+        if thought := decision.get("thought"):
+            actions.append(AgentAction("agent_thought", {"step": step, "thought": thought}))
+
+        if final_answer := decision.get("final_answer"):
+            context["related_sources"] = related_sources
+            return AgentResponse(
+                mode=request.mode,
+                answer=str(final_answer).strip(),
+                sources=sources[: _answer_source_limit(request)],
+                actions_taken=actions,
+                related_sources=related_sources,
+                draft=_motion_template(request, sources) if request.mode == "motion_draft" else None,
+                provider=getattr(provider, "name", "unknown"),
+                model_metadata=_provider_metadata(provider),
+            )
+
+        tool_name = str(decision.get("tool") or "").strip()
+        tool_args = decision.get("arguments") if isinstance(decision.get("arguments"), dict) else {}
+        observation = await _execute_agent_tool(tool_name, tool_args, request, tools, actions, context)
+        new_sources = observation.pop("_sources", [])
+        if new_sources:
+            sources = _dedupe_sources([*sources, *new_sources])
+            ranked_sources = _prioritize_sources(request, _apply_date_filter(request, sources, actions), actions)
+            sources = ranked_sources[: _answer_source_limit(request)]
+            related_sources = ranked_sources[_answer_source_limit(request) :]
+        transcript.append({"decision": decision, "observation": observation})
+
+    context["related_sources"] = related_sources
+    actions.append(AgentAction("agent_fallback", {"reason": "step_limit_reached"}))
+    return await provider.generate(request, sources[: _answer_source_limit(request)], context)
+
+
+def _tool_loop_step_limit(request: AgentRequest) -> int:
+    if request.research_depth == "quick":
+        return 3
+    if request.research_depth == "deep":
+        return 8
+    return 5
+
+
+def _answer_source_limit(request: AgentRequest) -> int:
+    return _retrieval_plan(request).answer_source_limit
+
+
+def _provider_metadata(provider: Any) -> dict[str, Any]:
+    metadata = {"provider": getattr(provider, "name", "unknown")}
+    if model := getattr(provider, "model", None):
+        metadata["model"] = model
+    return metadata
+
+
+def _validate_agent_decision(decision: Any, request: AgentRequest) -> dict[str, Any]:
+    if not isinstance(decision, dict):
+        return {"tool": "search_text", "arguments": {"query": request.task}}
+    if decision.get("final_answer"):
+        return {"thought": str(decision.get("thought") or "")[:500], "final_answer": str(decision["final_answer"])}
+    tool = str(decision.get("tool") or "search_text").strip()
+    if tool not in {"search_text", "list_meetings", "get_meeting"}:
+        tool = "search_text"
+    arguments = decision.get("arguments") if isinstance(decision.get("arguments"), dict) else {}
+    return {"thought": str(decision.get("thought") or "")[:500], "tool": tool, "arguments": arguments}
+
+
+async def _execute_agent_tool(
+    tool_name: str,
+    arguments: dict[str, Any],
+    request: AgentRequest,
+    tools: AgentTools,
+    actions: list[AgentAction],
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    if tool_name == "list_meetings":
+        limit = _bounded_int(arguments.get("limit"), default=20, minimum=1, maximum=80)
+        actions.append(AgentAction("list_meetings", {"limit": limit}))
+        meetings = await tools.list_meetings(limit=limit)
+        context["meetings"] = meetings
+        return {"meetings": meetings[:10], "count": len(meetings)}
+
+    if tool_name == "get_meeting":
+        meeting_id = str(arguments.get("meeting_id") or request.meeting_id or "").strip()
+        if not meeting_id:
+            return {"error": "meeting_id is required"}
+        actions.append(AgentAction("get_meeting", {"meeting_id": meeting_id}))
+        meeting = await tools.get_meeting(meeting_id)
+        context["meeting"] = meeting
+        meeting_source = _source_from_meeting_context(meeting)
+        return {"meeting": meeting, "_sources": [meeting_source] if meeting_source else []}
+
+    query = str(arguments.get("query") or request.task).strip()[:500]
+    limit = _bounded_int(arguments.get("limit"), default=12, minimum=1, maximum=40)
+    document_type = _allowed_document_type(arguments.get("document_type"))
+    results = await _search_text(tools, actions, query, limit, document_type)
+    return {"results": _source_payloads(results[:10]), "count": len(results), "_sources": results}
+
+
+def _bounded_int(value: Any, default: int, minimum: int, maximum: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = default
+    return min(max(parsed, minimum), maximum)
+
+
+def _allowed_document_type(value: Any) -> str | None:
+    document_type = str(value or "").strip().lower()
+    if document_type in {"motion", "minutes", "notice", "meeting", "other"}:
+        return document_type
+    return None
+
+
+def _source_payloads(sources: list[AgentSource]) -> list[dict[str, Any]]:
+    return [asdict(source) for source in sources]
 
 
 def _payload(contents: list[TextContent]) -> dict[str, Any]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from src.agent.core import AgentRequest, AgentSource, run_agent
+from src.agent.core import AgentRequest, AgentResponse, AgentSource, run_agent
 
 
 class FakeTools:
@@ -98,6 +98,37 @@ class MixedBodiesTools(FakeTools):
             AgentSource(title="StVV Verkehr", url="https://example.invalid/stvv", body_name="Stadtverordnetenversammlung"),
             AgentSource(title="Ausschuss Verkehr", url="https://example.invalid/ausschuss", body_name="Stadtentwicklungs-, Umwelt- und Energieausschuss"),
         ]
+
+
+class ToolLoopProvider:
+    name = "tool-loop-test"
+
+    def __init__(self, steps: list[dict[str, Any]]) -> None:
+        self.steps = steps
+        self.model = "test-model"
+
+    async def next_agent_step(
+        self,
+        _request: AgentRequest,
+        _transcript: list[dict[str, Any]],
+        _sources: list[AgentSource],
+        _context: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.steps.pop(0)
+
+    async def generate(
+        self,
+        request: AgentRequest,
+        sources: list[AgentSource],
+        context: dict[str, Any],
+    ) -> AgentResponse:
+        return AgentResponse(
+            mode=request.mode,
+            answer="fallback answer",
+            sources=sources,
+            actions_taken=list(context.get("actions_taken", [])),
+            provider=self.name,
+        )
 
 
 def test_research_mode_returns_sources_and_actions() -> None:
@@ -295,3 +326,48 @@ def test_citywide_fraction_queries_prioritize_stvv_over_ortsbeirat() -> None:
         "Ortsbeirat Wendershausen",
     ]
     assert response.actions_taken[-1].name == "prioritize_sources"
+
+
+def test_tool_loop_provider_controls_search_and_final_answer() -> None:
+    tools = FakeTools()
+    provider = ToolLoopProvider(
+        [
+            {"thought": "Search for Green traffic motions.", "tool": "search_text", "arguments": {"query": "Grüne Verkehr Antrag", "limit": 7, "document_type": "motion"}},
+            {"thought": "Enough evidence.", "final_answer": "## Antwort\nDie Quelle belegt sichere Radwege [1]."},
+        ]
+    )
+
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(task="Finde frühere Anträge der Grünen zum Thema Verkehr", mode="research"),
+            tools=tools,
+            provider=provider,
+        )
+    )
+
+    assert response.provider == "tool-loop-test"
+    assert response.answer == "## Antwort\nDie Quelle belegt sichere Radwege [1]."
+    assert [action.name for action in response.actions_taken] == ["agent_start", "agent_thought", "search_text", "agent_thought"]
+    assert tools.calls == [("search_text", {"query": "Grüne Verkehr Antrag", "limit": 7, "document_type": "motion"})]
+
+
+def test_tool_loop_can_list_and_get_meetings() -> None:
+    tools = FakeTools()
+    provider = ToolLoopProvider(
+        [
+            {"tool": "list_meetings", "arguments": {"limit": 5}},
+            {"tool": "get_meeting", "arguments": {"meeting_id": "meeting-1"}},
+            {"final_answer": "## Kurzbriefing\nTOP 1 ist relevant [1]."},
+        ]
+    )
+
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(task="Was steht in der nächsten Stadtverordnetenversammlung an?", mode="briefing"),
+            tools=tools,
+            provider=provider,
+        )
+    )
+
+    assert tools.calls[:2] == [("list_meetings", {"limit": 5}), ("get_meeting", {"meeting_id": "meeting-1"})]
+    assert response.sources[0].title == "Tagesordnung Stadtverordnetenversammlung"
