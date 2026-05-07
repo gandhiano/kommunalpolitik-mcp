@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import asdict
 import os
+import time
 from typing import Any, Protocol
 
 import requests
@@ -52,6 +53,7 @@ class NoneProvider:
             related_sources=list(context.get("related_sources", [])),
             draft=draft,
             provider=self.name,
+            model_metadata={"provider": self.name, "model": None},
         )
 
 
@@ -69,8 +71,16 @@ class AnthropicProvider:
         context: dict[str, Any],
     ) -> AgentResponse:
         prompt = build_agent_prompt(request, sources, context)
+        started_at = time.monotonic()
         answer = await asyncio.to_thread(self._complete, prompt)
-        return _response_from_llm(self.name, request, sources, context, answer)
+        return _response_from_llm(
+            self.name,
+            request,
+            sources,
+            context,
+            answer,
+            {"provider": self.name, "model": self.model, "latency_ms": round((time.monotonic() - started_at) * 1000)},
+        )
 
     def _complete(self, prompt: str) -> str:
         response = requests.post(
@@ -109,8 +119,16 @@ class OpenAIProvider:
         context: dict[str, Any],
     ) -> AgentResponse:
         prompt = build_agent_prompt(request, sources, context)
+        started_at = time.monotonic()
         answer = await asyncio.to_thread(self._complete, prompt)
-        return _response_from_llm(self.name, request, sources, context, answer)
+        return _response_from_llm(
+            self.name,
+            request,
+            sources,
+            context,
+            answer,
+            {"provider": self.name, "model": self.model, "latency_ms": round((time.monotonic() - started_at) * 1000)},
+        )
 
     def _complete(self, prompt: str) -> str:
         response = requests.post(
@@ -134,27 +152,37 @@ class OpenAIProvider:
         return payload["choices"][0]["message"]["content"].strip()
 
 
-def provider_from_env() -> AgentProvider:
+def provider_from_env(request: AgentRequest | None = None) -> AgentProvider:
     provider = os.environ.get("KOMMUNALPOLITIK_LLM_PROVIDER", "none").strip().lower()
-    model = os.environ.get("KOMMUNALPOLITIK_LLM_MODEL")
 
     if provider == "none":
         return NoneProvider()
     if provider == "anthropic":
         api_key = _required_env("ANTHROPIC_API_KEY")
-        return AnthropicProvider(api_key=api_key, model=model or "claude-3-5-sonnet-latest")
+        return AnthropicProvider(api_key=api_key, model=_model_from_env(request, "claude-3-5-sonnet-latest"))
     if provider == "openai":
         api_key = _required_env("OPENAI_API_KEY")
-        return OpenAIProvider(api_key=api_key, model=model or "gpt-4o-mini")
+        return OpenAIProvider(api_key=api_key, model=_model_from_env(request, "gpt-4o-mini"))
     if provider == "openai-compatible":
         api_key = _required_env("KOMMUNALPOLITIK_LLM_API_KEY")
         base_url = _required_env("KOMMUNALPOLITIK_LLM_BASE_URL")
         return OpenAIProvider(
             api_key=api_key,
-            model=model or _required_env("KOMMUNALPOLITIK_LLM_MODEL"),
+            model=_model_from_env(request, _required_env("KOMMUNALPOLITIK_LLM_MODEL")),
             base_url=base_url,
         )
     raise ValueError(f"Unsupported KOMMUNALPOLITIK_LLM_PROVIDER: {provider}")
+
+
+def _model_from_env(request: AgentRequest | None, fallback: str) -> str:
+    default = os.environ.get("KOMMUNALPOLITIK_LLM_MODEL") or fallback
+    if request is None:
+        return default
+    if request.research_depth == "quick":
+        return os.environ.get("KOMMUNALPOLITIK_MODEL_QUICK") or default
+    if request.research_depth == "deep" or request.mode in {"motion_draft", "follow_up"}:
+        return os.environ.get("KOMMUNALPOLITIK_MODEL_STRONG") or default
+    return os.environ.get("KOMMUNALPOLITIK_MODEL_BALANCED") or default
 
 
 SYSTEM_PROMPT = """Du bist ein spezialisierter kommunalpolitischer Arbeitsassistent fuer Witzenhausen.
@@ -283,6 +311,7 @@ def _response_from_llm(
     sources: list[AgentSource],
     context: dict[str, Any],
     answer: str,
+    model_metadata: dict[str, Any] | None = None,
 ) -> AgentResponse:
     if not answer.strip():
         from .core import _deterministic_answer
@@ -299,6 +328,7 @@ def _response_from_llm(
         related_sources=list(context.get("related_sources", [])),
         draft=_motion_template(request, sources) if request.mode == "motion_draft" else None,
         provider=provider,
+        model_metadata=model_metadata or {"provider": provider},
     )
 
 

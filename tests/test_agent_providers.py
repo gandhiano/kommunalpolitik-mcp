@@ -36,6 +36,23 @@ def test_provider_from_env_builds_openai_compatible(monkeypatch) -> None:
     assert provider.model == "local-model"
 
 
+def test_provider_from_env_selects_model_by_request(monkeypatch) -> None:
+    monkeypatch.setenv("KOMMUNALPOLITIK_LLM_PROVIDER", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("KOMMUNALPOLITIK_LLM_MODEL", "default-model")
+    monkeypatch.setenv("KOMMUNALPOLITIK_MODEL_QUICK", "quick-model")
+    monkeypatch.setenv("KOMMUNALPOLITIK_MODEL_BALANCED", "balanced-model")
+    monkeypatch.setenv("KOMMUNALPOLITIK_MODEL_STRONG", "strong-model")
+
+    quick = provider_from_env(AgentRequest(task="Kurz", research_depth="quick"))
+    balanced = provider_from_env(AgentRequest(task="Normal"))
+    strong = provider_from_env(AgentRequest(task="Entwurf", mode="motion_draft"))
+
+    assert quick.model == "quick-model"
+    assert balanced.model == "balanced-model"
+    assert strong.model == "strong-model"
+
+
 def test_build_agent_prompt_includes_sources_and_mode_instruction() -> None:
     prompt = build_agent_prompt(
         AgentRequest(task="Haushalt", mode="research"),
@@ -80,3 +97,4 @@ def test_empty_llm_answer_falls_back_to_retrieval_summary() -> None:
 
     assert "Haushaltsplan" in response.answer
     assert "leere Antwort" in response.answer
+    assert response.model_metadata == {"provider": "openai"}

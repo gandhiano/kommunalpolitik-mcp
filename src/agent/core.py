@@ -63,6 +63,7 @@ class AgentResponse:
     related_sources: list[AgentSource] = field(default_factory=list)
     draft: dict[str, Any] | None = None
     provider: str = "none"
+    model_metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -113,7 +114,7 @@ async def run_agent(
     from .providers import provider_from_env
 
     tools = tools or WitzenhausenAgentTools()
-    provider = provider or provider_from_env()
+    provider = provider or provider_from_env(request)
     actions: list[AgentAction] = []
     context: dict[str, Any] = {"actions_taken": actions}
 
