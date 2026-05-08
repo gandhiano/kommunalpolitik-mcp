@@ -22,10 +22,12 @@ ResearchDepth = Literal["quick", "auto", "deep"]
 class AgentRequest:
     task: str
     mode: AgentMode = "research"
+    agent: str = "general"
     topic: str | None = None
     actor: str | None = None
     meeting_id: str | None = None
     research_depth: ResearchDepth = "auto"
+    messages: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

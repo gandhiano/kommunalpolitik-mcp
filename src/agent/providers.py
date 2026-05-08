@@ -211,7 +211,7 @@ def _model_from_env(request: AgentRequest | None, fallback: str) -> str:
         return default
     if request.research_depth == "quick":
         return os.environ.get("KOMMUNALPOLITIK_MODEL_QUICK") or default
-    if request.research_depth == "deep" or request.mode in {"motion_draft", "follow_up"}:
+    if request.research_depth == "deep" or request.mode in {"motion_draft", "follow_up"} or request.agent in {"drafting", "scrutiny"}:
         return os.environ.get("KOMMUNALPOLITIK_MODEL_STRONG") or default
     return os.environ.get("KOMMUNALPOLITIK_MODEL_BALANCED") or default
 
@@ -238,9 +238,13 @@ def build_agent_step_prompt(
 ) -> str:
     return f"""Du bist ein tool-nutzender kommunalpolitischer Agent.
 
-Aufgabe: {request.task}
-Modus: {request.mode}
+Aktuelle Aufgabe: {request.task}
+Agent: {request.agent}
+Legacy-Modus: {request.mode}
 Recherche-Tiefe: {request.research_depth}
+
+Gespräch bisher:
+{_conversation_for_agent_prompt(request.messages)}
 
 Du darfst genau eine Aktion als JSON-Objekt ausgeben, ohne Markdown.
 
@@ -283,6 +287,18 @@ def _sources_for_agent_prompt(sources: list[AgentSource]) -> str:
     return "\n".join(lines)
 
 
+def _conversation_for_agent_prompt(messages: list[dict[str, str]]) -> str:
+    if not messages:
+        return "-"
+    lines = []
+    for message in messages[-10:]:
+        role = message.get("role", "user")
+        content = message.get("content", "").strip().replace("\n", " ")
+        if content:
+            lines.append(f"{role}: {content[:1200]}")
+    return "\n".join(lines) if lines else "-"
+
+
 def _short_json(value: Any) -> str:
     if value is None:
         return "-"
@@ -295,6 +311,7 @@ def build_agent_prompt(
     context: dict[str, Any],
 ) -> str:
     lines = [
+        f"Agent: {request.agent}",
         f"Modus: {request.mode}",
         f"Aufgabe: {request.task}",
         "",

@@ -30,6 +30,7 @@ from .mcp_server import server
 
 
 AGENT_MODES = {"research", "briefing", "motion_draft", "follow_up"}
+AGENT_TYPES = {"general", "research", "briefing", "drafting", "scrutiny"}
 RESEARCH_DEPTHS = {"quick", "auto", "deep"}
 SESSION_COOKIE = "kommunalpolitik_session"
 SESSION_TTL_SECONDS = 60 * 60 * 12
@@ -101,8 +102,12 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
         except Exception:
             return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
 
-        task = str(payload.get("task") or "").strip()
-        mode = str(payload.get("mode") or "research")
+        messages = _chat_messages(payload.get("messages"))
+        task = str(payload.get("task") or "").strip() or _latest_user_message(messages)
+        agent = str(payload.get("agent") or "general").strip().lower()
+        if agent not in AGENT_TYPES:
+            return JSONResponse({"error": f"Unsupported agent: {agent}"}, status_code=400)
+        mode = str(payload.get("mode") or _mode_for_agent(agent))
         if not task:
             return JSONResponse({"error": "Field 'task' is required"}, status_code=400)
         if mode not in AGENT_MODES:
@@ -116,10 +121,12 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
                 AgentRequest(
                     task=task,
                     mode=mode,  # type: ignore[arg-type]
+                    agent=agent,
                     topic=payload.get("topic"),
                     actor=payload.get("actor"),
                     meeting_id=payload.get("meeting_id"),
                     research_depth=research_depth,  # type: ignore[arg-type]
+                    messages=messages,
                 )
             )
         except FileNotFoundError as exc:
@@ -183,6 +190,37 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
 
 def _auth_enabled() -> bool:
     return bool(os.environ.get("KOMMUNALPOLITIK_AUTH_PASSWORD"))
+
+
+def _chat_messages(value: Any) -> list[dict[str, str]]:
+    if not isinstance(value, list):
+        return []
+    messages: list[dict[str, str]] = []
+    for item in value[-20:]:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role") or "").strip().lower()
+        content = str(item.get("content") or "").strip()
+        if role in {"user", "assistant"} and content:
+            messages.append({"role": role, "content": content[:12000]})
+    return messages
+
+
+def _mode_for_agent(agent: str) -> str:
+    if agent == "briefing":
+        return "briefing"
+    if agent == "drafting":
+        return "motion_draft"
+    if agent == "scrutiny":
+        return "follow_up"
+    return "research"
+
+
+def _latest_user_message(messages: list[dict[str, str]]) -> str:
+    for message in reversed(messages):
+        if message["role"] == "user":
+            return message["content"]
+    return ""
 
 
 def _secure_cookies() -> bool:
