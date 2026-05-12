@@ -8,11 +8,16 @@ import re
 import sqlite3
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from mcp import Tool
 from mcp.types import TextContent
 
 from src.config import load_municipality_config
+from src.ingest.pdf_text import extract_pdf_text
+from src.ingest.sessionnet_client import SessionNetClient
+from src.ingest.sessionnet_repository import SessionNetRepository
+from src.ingest.text_index import chunk_document
 
 
 DEFAULT_DB_PATH = Path("data/witzenhausen/witzenhausen.sqlite")
@@ -181,8 +186,21 @@ async def search_documents(
 
 async def get_document_text(document_id: str) -> list[TextContent]:
     """Return extracted full text for a downloaded document."""
+    row = _document_text_row(document_id)
+
+    if not row:
+        return _content({"error": "Document not found", "document_id": document_id})
+    if not row["text"]:
+        extraction = _extract_document_on_demand(document_id)
+        if extraction.get("error"):
+            return _content(extraction)
+        row = _document_text_row(document_id)
+    return _content({"document": _row_to_dict(row), "on_demand_extraction": bool(row and row["text_path"])})
+
+
+def _document_text_row(document_id: str) -> sqlite3.Row | None:
     with _connect() as connection:
-        row = connection.execute(
+        return connection.execute(
             """
             SELECT d.id, d.document_type, d.name, d.url, d.file_path, t.text, t.text_path
             FROM documents d
@@ -192,17 +210,74 @@ async def get_document_text(document_id: str) -> list[TextContent]:
             (document_id,),
         ).fetchone()
 
-    if not row:
-        return _content({"error": "Document not found", "document_id": document_id})
-    if not row["text"]:
-        return _content(
-            {
-                "error": "Document text not extracted yet",
+
+def _extract_document_on_demand(document_id: str) -> dict[str, Any]:
+    config = load_municipality_config()
+    repo = SessionNetRepository(config.database_path)
+    try:
+        repo.init_schema()
+        row = repo.connection.execute("SELECT * FROM documents WHERE id = ?", (document_id,)).fetchone()
+        if not row:
+            return {"error": "Document not found", "document_id": document_id}
+
+        file_path = Path(row["file_path"]) if row["file_path"] else None
+        if not file_path or not file_path.exists():
+            client = SessionNetClient(config.base_url, config.data_dir / "raw" / "html", delay_seconds=0)
+            file_path = config.data_dir / "raw" / "pdf" / f"{document_id}{_extension_from_url(row['url'])}"
+            sha256, size = client.download(row["url"], file_path)
+            repo.mark_document_downloaded(document_id, file_path, sha256, size)
+
+        try:
+            text = _sanitize_text(extract_pdf_text(file_path))
+        except Exception as exc:
+            return {
+                "error": "Document text extraction failed",
                 "document_id": document_id,
-                "hint": "Run text extraction for your municipality first.",
+                "document_name": row["name"],
+                "url": row["url"],
+                "reason": str(exc)[:500],
             }
-        )
-    return _content({"document": _row_to_dict(row)})
+        text_path = config.data_dir / "text" / f"{document_id}.txt"
+        text_path.parent.mkdir(parents=True, exist_ok=True)
+        text_path.write_text(text, encoding="utf-8")
+        repo.save_document_text(document_id, text_path, text)
+
+        chunk_row = repo.connection.execute(
+            """
+            SELECT
+                d.id,
+                d.source_type,
+                d.source_id,
+                d.document_type,
+                d.name AS document_name,
+                m.body_name,
+                m.meeting_date,
+                t.text
+            FROM documents d
+            JOIN document_text t ON t.document_id = d.id
+            LEFT JOIN meetings m ON d.source_type = 'meeting' AND d.source_id = m.id
+            WHERE d.id = ?
+            """,
+            (document_id,),
+        ).fetchone()
+        chunks = chunk_document(chunk_row)
+        repo.save_document_chunks(document_id, chunks, rebuild=True)
+        return {"status": "extracted", "document_id": document_id, "chunks": len(chunks)}
+    finally:
+        repo.close()
+
+
+def _extension_from_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.path.endswith("getfile.asp") and parse_qs(parsed.query).get("type") == ["do"]:
+        return ".pdf"
+    if match := re.search(r"\.([a-zA-Z0-9]{2,5})$", parsed.path):
+        return f".{match.group(1).lower()}"
+    return ".pdf"
+
+
+def _sanitize_text(text: str) -> str:
+    return text.encode("utf-8", errors="replace").decode("utf-8")
 
 
 async def search_text(
