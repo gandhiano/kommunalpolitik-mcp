@@ -7,6 +7,7 @@ import contextlib
 import hashlib
 import hmac
 import json
+import logging
 import os
 import secrets
 import sqlite3
@@ -34,6 +35,7 @@ AGENT_TYPES = {"general", "research", "briefing", "drafting", "scrutiny"}
 RESEARCH_DEPTHS = {"quick", "auto", "deep"}
 SESSION_COOKIE = "kommunalpolitik_session"
 SESSION_TTL_SECONDS = 60 * 60 * 12
+LOGGER = logging.getLogger("kommunalpolitik.http")
 
 
 def create_app(stateless: bool = True, json_response: bool = False) -> Starlette:
@@ -95,27 +97,45 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
         return response
 
     async def agent(request: Request) -> JSONResponse:
+        request_id = secrets.token_hex(4)
+        started_at = time.monotonic()
         if not _is_authenticated(request):
+            LOGGER.info("agent_request rejected request_id=%s status=401 reason=unauthenticated", request_id)
             return JSONResponse({"error": "Authentication required"}, status_code=401)
         try:
             payload = await request.json()
         except Exception:
+            LOGGER.info("agent_request rejected request_id=%s status=400 reason=invalid_json", request_id)
             return JSONResponse({"error": "Request body must be JSON"}, status_code=400)
 
         messages = _chat_messages(payload.get("messages"))
         task = str(payload.get("task") or "").strip() or _latest_user_message(messages)
         agent = str(payload.get("agent") or "general").strip().lower()
         if agent not in AGENT_TYPES:
+            LOGGER.info("agent_request rejected request_id=%s status=400 reason=unsupported_agent agent=%s", request_id, agent)
             return JSONResponse({"error": f"Unsupported agent: {agent}"}, status_code=400)
         mode = str(payload.get("mode") or _mode_for_agent(agent))
         if not task:
+            LOGGER.info("agent_request rejected request_id=%s status=400 reason=missing_task agent=%s", request_id, agent)
             return JSONResponse({"error": "Field 'task' is required"}, status_code=400)
         if mode not in AGENT_MODES:
+            LOGGER.info("agent_request rejected request_id=%s status=400 reason=unsupported_mode mode=%s", request_id, mode)
             return JSONResponse({"error": f"Unsupported mode: {mode}"}, status_code=400)
         research_depth = str(payload.get("research_depth") or "auto")
         if research_depth not in RESEARCH_DEPTHS:
+            LOGGER.info("agent_request rejected request_id=%s status=400 reason=unsupported_depth depth=%s", request_id, research_depth)
             return JSONResponse({"error": f"Unsupported research_depth: {research_depth}"}, status_code=400)
 
+        LOGGER.info(
+            "agent_request start request_id=%s runtime=%s agent=%s mode=%s depth=%s messages=%s task_chars=%s",
+            request_id,
+            os.environ.get("KOMMUNALPOLITIK_AGENT_RUNTIME", "tool-loop"),
+            agent,
+            mode,
+            research_depth,
+            len(messages),
+            len(task),
+        )
         try:
             response = await run_agent(
                 AgentRequest(
@@ -130,11 +150,24 @@ def create_app(stateless: bool = True, json_response: bool = False) -> Starlette
                 )
             )
         except FileNotFoundError as exc:
+            LOGGER.warning("agent_request failed request_id=%s status=503 error=%s", request_id, exc)
             return JSONResponse({"error": str(exc)}, status_code=503)
         except ValueError as exc:
+            LOGGER.warning("agent_request failed request_id=%s status=503 error=%s", request_id, exc)
             return JSONResponse({"error": str(exc)}, status_code=503)
         except ProviderError as exc:
+            LOGGER.warning("agent_request failed request_id=%s status=%s error=%s", request_id, exc.status_code, exc.message)
             return JSONResponse({"error": exc.message}, status_code=exc.status_code)
+        elapsed_ms = round((time.monotonic() - started_at) * 1000)
+        LOGGER.info(
+            "agent_request finish request_id=%s status=200 provider=%s answer_chars=%s sources=%s actions=%s elapsed_ms=%s",
+            request_id,
+            response.provider,
+            len(response.answer),
+            len(response.sources),
+            len(response.actions_taken),
+            elapsed_ms,
+        )
         return JSONResponse(response.to_dict())
 
     async def feedback(request: Request) -> JSONResponse:
@@ -351,6 +384,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--json-response", action="store_true", help="Use JSON responses instead of SSE streams")
     parser.add_argument("--reload", action="store_true", help="Reload the local HTTP server when source files change")
     args = parser.parse_args(argv)
+    log_level = os.environ.get("KOMMUNALPOLITIK_LOG_LEVEL", "INFO").lower()
+    logging.basicConfig(level=log_level.upper(), format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
     if args.reload and (args.stateful or args.json_response):
         raise SystemExit("--reload only supports the default stateless SSE-compatible local dev server")
@@ -362,6 +397,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             host=args.host,
             port=args.port,
             reload=True,
+            log_level=log_level,
         )
         return
 
@@ -369,6 +405,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         create_app(stateless=not args.stateful, json_response=args.json_response),
         host=args.host,
         port=args.port,
+        log_level=log_level,
     )
 
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import './App.css'
 
 type Role = 'user' | 'assistant'
@@ -108,6 +108,13 @@ function App() {
     setInput('')
     setLoading(true)
     setError(null)
+    const startedAt = performance.now()
+    console.info('[agent] request start', {
+      agent,
+      researchDepth,
+      messages: nextMessages.length,
+      taskChars: content.length,
+    })
 
     try {
       const res = await fetch('/agent', {
@@ -119,17 +126,30 @@ function App() {
           research_depth: researchDepth,
         }),
       })
+      console.info('[agent] response received', {
+        status: res.status,
+        ok: res.ok,
+        elapsedMs: Math.round(performance.now() - startedAt),
+      })
       if (!res.ok) {
         if (res.status === 401) setAuthStatus({ authenticated: false, auth_enabled: true })
         throw new Error(await responseError(res))
       }
       const response = (await res.json()) as AgentResponse
+      console.info('[agent] response parsed', {
+        provider: response.provider,
+        answerChars: response.answer.length,
+        sources: response.sources.length,
+        actions: response.actions_taken.length,
+      })
       setMessages((current) => [
         ...current,
         { id: crypto.randomUUID(), role: 'assistant', content: response.answer, requestTask: content, response },
       ])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
+      console.error('[agent] request failed', { message, elapsedMs: Math.round(performance.now() - startedAt) })
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -247,19 +267,22 @@ function Welcome({ agent, sendMessage }: { agent: AgentKind; sendMessage: (text:
 
 function ChatBubble({ message, researchDepth }: { message: ChatMessage; researchDepth: ResearchDepth }) {
   const response = message.response
+  const display = response ? displayAnswer(response) : { text: message.content, sources: [] }
+  const sourceBaseId = `sources-${message.id}`
   return (
     <article className={`chat-bubble ${message.role}`}>
-      {message.role === 'user' ? <p>{message.content}</p> : <MarkdownText sourceCount={response?.sources.length ?? 0} text={message.content} />}
-      {response && <AnswerDetails researchDepth={researchDepth} requestTask={message.requestTask ?? message.content} response={response} />}
+      {message.role === 'user' ? <p>{message.content}</p> : <MarkdownText sourceBaseId={sourceBaseId} sources={display.sources} text={display.text} />}
+      {response && <AnswerDetails displaySources={display.sources} researchDepth={researchDepth} requestTask={message.requestTask ?? message.content} response={response} sourceBaseId={sourceBaseId} />}
     </article>
   )
 }
 
-function AnswerDetails({ researchDepth, requestTask, response }: { researchDepth: ResearchDepth; requestTask: string; response: AgentResponse }) {
+function AnswerDetails({ displaySources, researchDepth, requestTask, response, sourceBaseId }: { displaySources: AgentSource[]; researchDepth: ResearchDepth; requestTask: string; response: AgentResponse; sourceBaseId: string }) {
+  const latency = typeof response.model_metadata.latency_ms === 'number' ? `${response.model_metadata.latency_ms} ms` : null
   return (
     <div className="answer-details">
-      <div className="answer-meta"><span>{response.provider}</span><span>{response.sources.length} Quellen</span></div>
-      {response.sources.length > 0 && <SourceList sources={response.sources} />}
+      <div className="answer-meta"><span>{response.provider}</span><span>{displaySources.length} Quellen</span>{latency && <span>{latency}</span>}</div>
+      {displaySources.length > 0 && <SourceList baseId={sourceBaseId} sources={displaySources} />}
       <details className="trace-card inline-trace">
         <summary>Rechercheweg</summary>
         <ol>{response.actions_taken.map((action, index) => <li key={`${action.name}-${index}`}><strong>{action.name}</strong><span>{JSON.stringify(action.arguments)}</span></li>)}</ol>
@@ -269,19 +292,32 @@ function AnswerDetails({ researchDepth, requestTask, response }: { researchDepth
   )
 }
 
-function SourceList({ sources }: { sources: AgentSource[] }) {
+function SourceList({ baseId, sources }: { baseId: string; sources: AgentSource[] }) {
   return (
     <div className="sources used-sources chat-sources">
-      {sources.map((source, index) => (
-        <a className="source-item" href={source.url ?? '#'} key={`${source.document_id}-${index}`} rel="noreferrer" target="_blank">
-          <span className="source-meta"><span className="source-number">[{index + 1}]</span>{source.meeting_date ?? source.document_type ?? 'Quelle'}</span>
-          <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
-          <small>{source.body_name}</small>
-          {source.snippet && <p>{source.snippet}</p>}
-        </a>
-      ))}
+      {sources.map((source, index) => {
+        const href = source.url ?? documentDownloadUrl(source.document_id)
+        return (
+          <a className="source-item" href={href ?? `#${baseId}-${index + 1}`} id={`${baseId}-${index + 1}`} key={`${source.document_id}-${index}`} rel="noreferrer" target={href ? '_blank' : undefined}>
+            <span className="source-meta"><span className="source-number">[{index + 1}]</span>{source.meeting_date ?? sourceTypeLabel(source.document_type)}</span>
+            <strong><InlineMarkdown text={source.title ?? 'Unbenannte Quelle'} /></strong>
+            <small>{source.body_name}</small>
+            {source.snippet && <p><InlineMarkdown text={source.snippet} /></p>}
+            {href && <span className="source-download">Original öffnen</span>}
+          </a>
+        )
+      })}
     </div>
   )
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  return <>{renderInline(text, '', 0, new Map())}</>
+}
+
+function documentDownloadUrl(documentId: string | null) {
+  const id = documentId?.match(/^\d{5,6}$/)?.[0]
+  return id ? `https://sessionnet.owl-it.de/witzenhausen/BI/getfile.asp?id=${id}&type=do` : null
 }
 
 function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: string; researchDepth: ResearchDepth; response: AgentResponse }) {
@@ -334,27 +370,242 @@ function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: st
   )
 }
 
-function MarkdownText({ sourceCount, text }: { sourceCount: number; text: string }) {
+function MarkdownText({ sourceBaseId, sources, text }: { sourceBaseId: string; sources: AgentSource[]; text: string }) {
   const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
-  return <div className="markdown-answer">{blocks.map((block, index) => <MarkdownBlock block={block} key={index} sourceCount={sourceCount} />)}</div>
+  const sourceIndex = sourceIndexByDocument(sources)
+  return <div className="markdown-answer">{blocks.map((block, index) => <MarkdownBlock block={block} key={index} sourceBaseId={sourceBaseId} sourceCount={sources.length} sourceIndex={sourceIndex} />)}</div>
 }
 
-function MarkdownBlock({ block, sourceCount }: { block: string; sourceCount: number }) {
+function MarkdownBlock({ block, sourceBaseId, sourceCount, sourceIndex }: { block: string; sourceBaseId: string; sourceCount: number; sourceIndex: Map<string, number> }) {
   const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
   const firstLine = lines[0] ?? ''
-  if (firstLine.startsWith('## ')) return <><h3>{renderInline(firstLine.slice(3), sourceCount)}</h3>{lines.slice(1).map((line) => <p key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceCount)}</p>)}</>
-  if (lines.every((line) => /^[-*]\s+/.test(line))) return <ul>{lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceCount)}</li>)}</ul>
-  return <p>{renderInline(lines.join(' '), sourceCount)}</p>
+  if (isMarkdownTable(lines)) return <MarkdownTable lines={lines} sourceBaseId={sourceBaseId} sourceCount={sourceCount} sourceIndex={sourceIndex} />
+  if (/^#{1,3}\s+/.test(firstLine)) return <><h3>{renderInline(firstLine.replace(/^#{1,3}\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</h3>{renderLines(lines.slice(1), sourceBaseId, sourceCount, sourceIndex)}</>
+  if (lines.every((line) => /^[-*]\s+/.test(line))) return <ul>{lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</li>)}</ul>
+  if (lines.every((line) => /^\d+[.)]\s+/.test(line))) return <ol>{lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</li>)}</ol>
+  return <>{renderLines(lines, sourceBaseId, sourceCount, sourceIndex)}</>
 }
 
-function renderInline(text: string, sourceCount: number) {
-  return text.split(/(\*\*[^*]+\*\*|\[\d+\])/g).map((part, index) => {
+function MarkdownTable({ lines, sourceBaseId, sourceCount, sourceIndex }: { lines: string[]; sourceBaseId: string; sourceCount: number; sourceIndex: Map<string, number> }) {
+  const rows = lines.filter((line) => !/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line)).map(tableCells)
+  const [header, ...body] = rows
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead><tr>{header.map((cell) => <th key={cell}>{renderInline(cell, sourceBaseId, sourceCount, sourceIndex)}</th>)}</tr></thead>
+        <tbody>{body.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{renderInline(cell, sourceBaseId, sourceCount, sourceIndex)}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  )
+}
+
+function isMarkdownTable(lines: string[]) {
+  return lines.length >= 2 && lines[0].includes('|') && /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(lines[1])
+}
+
+function tableCells(line: string) {
+  return line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim())
+}
+
+function renderLines(lines: string[], sourceBaseId: string, sourceCount: number, sourceIndex: Map<string, number>) {
+  if (lines.length === 0) return null
+  const rendered: ReactNode[] = []
+  let index = 0
+  while (index < lines.length) {
+    const line = lines[index]
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^[-*]\s+/.test(lines[index])) items.push(lines[index++].replace(/^[-*]\s+/, ''))
+      rendered.push(<ul key={`ul-${index}`}>{items.map((item) => <li key={item}>{renderInline(item, sourceBaseId, sourceCount, sourceIndex)}</li>)}</ul>)
+      continue
+    }
+    if (/^\d+[.)]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^\d+[.)]\s+/.test(lines[index])) items.push(lines[index++].replace(/^\d+[.)]\s+/, ''))
+      rendered.push(<ol key={`ol-${index}`}>{items.map((item) => <li key={item}>{renderInline(item, sourceBaseId, sourceCount, sourceIndex)}</li>)}</ol>)
+      continue
+    }
+    rendered.push(<p key={`p-${index}`}>{renderInline(line, sourceBaseId, sourceCount, sourceIndex)}</p>)
+    index += 1
+  }
+  return rendered
+}
+
+function renderInline(text: string, sourceBaseId: string, sourceCount: number, sourceIndex: Map<string, number>) {
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*|\[\d+\]|Dok(?:ument)?\.?\s*\d{5,6}|\b\d{5,6}\b)/g).map((part, index) => {
+    if (part.startsWith('`') && part.endsWith('`')) return <code key={index}>{part.slice(1, -1)}</code>
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>
     if (/^\[\d+\]$/.test(part)) {
       const sourceIndex = Number(part.slice(1, -1))
-      if (sourceIndex >= 1 && sourceIndex <= sourceCount) return <span className="citation-link" key={index}>{part}</span>
+      if (sourceIndex >= 1 && sourceIndex <= sourceCount) return <CitationLink key={index} label={part} sourceBaseId={sourceBaseId} sourceNumber={sourceIndex} />
+      if (sourceIndex >= 1) return <span className="citation-link" key={index}>{part}</span>
+    }
+    const documentMatch = part.match(/^(?:Dok(?:ument)?\.?\s*)?(\d{5,6})$/)
+    if (documentMatch) {
+      const sourceNumber = sourceIndex.get(documentMatch[1])
+      if (sourceNumber) return <CitationLink key={index} label={`[${sourceNumber}]`} sourceBaseId={sourceBaseId} sourceNumber={sourceNumber} />
     }
     return <span key={index}>{part}</span>
+  })
+}
+
+function CitationLink({ label, sourceBaseId, sourceNumber }: { label: string; sourceBaseId: string; sourceNumber: number }) {
+  const targetId = `${sourceBaseId}-${sourceNumber}`
+  return (
+    <a
+      className="citation-link"
+      href={`#${targetId}`}
+      onClick={(event) => {
+        const target = document.getElementById(targetId)
+        if (!target) return
+        event.preventDefault()
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        window.history.replaceState(null, '', `#${targetId}`)
+      }}
+    >
+      {label}
+    </a>
+  )
+}
+
+function displayAnswer(response: AgentResponse) {
+  const answer = stripSystemReminders(response.answer)
+  if (response.sources.length > 0) return { text: answer, sources: response.sources }
+  const extracted = extractReferenceSection(answer)
+  if (extracted.sources.length > 0) return { text: extracted.text, sources: extracted.sources }
+  const sources = extractInlineDocumentSources(answer)
+  return { text: normalizeInlineDocumentReferences(answer, sources), sources }
+}
+
+function stripSystemReminders(text: string) {
+  return text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim()
+}
+
+function extractReferenceSection(answer: string): { text: string; sources: AgentSource[] } {
+  const lines = answer.split('\n')
+  const headingIndex = lines.findIndex((line) => isReferenceHeading(line))
+  if (headingIndex < 0) return { text: answer, sources: [] }
+
+  const headingReference = parseReferenceLine(stripReferenceHeading(lines[headingIndex]))
+  const sources = [headingReference, ...lines.slice(headingIndex + 1).map(parseReferenceLine)].filter((source): source is AgentSource => source !== null)
+  if (sources.length === 0) return { text: answer, sources: [] }
+  return { text: lines.slice(0, headingIndex).join('\n').trim(), sources }
+}
+
+function isReferenceHeading(line: string) {
+  return /^#{0,3}\s*(?:\*\*)?\s*(quellen|sources|referenzen|references)\s*(?:\*\*)?\s*:?/i.test(line.trim())
+}
+
+function stripReferenceHeading(line: string) {
+  return line.trim().replace(/^#{0,3}\s*(?:\*\*)?\s*(quellen|sources|referenzen|references)\s*(?:\*\*)?\s*:?\s*/i, '')
+}
+
+function parseReferenceLine(line: string): AgentSource | null {
+  const match = line.trim().match(/^(?:[-*]\s*)?(?:\d+[.)]\s*)?\[(\d+)\]\s*:?[\s-]*(.+)$/)
+  if (!match) return null
+  const raw = match[2].trim()
+  const url = raw.match(/https?:\/\/\S+/)?.[0].replace(/[).,;]+$/, '') ?? null
+  const title = raw.replace(/https?:\/\/\S+/, '').replace(/^[-:–—\s]+|[-:–—\s]+$/g, '').trim()
+  return {
+    title: title || url || `Quelle ${match[1]}`,
+    url,
+    snippet: null,
+    document_id: `extracted-${match[1]}`,
+    body_name: null,
+    meeting_date: null,
+    document_type: 'extracted',
+  }
+}
+
+function extractInlineDocumentSources(answer: string): AgentSource[] {
+  const sources = new Map<string, AgentSource>()
+  const lines = answer.split('\n').map((line) => line.trim()).filter(Boolean)
+  for (const line of lines) {
+    for (const documentId of documentIds(line)) {
+      if (!sources.has(documentId)) sources.set(documentId, sourceFromInlineReference(documentId, line))
+    }
+  }
+  return [...sources.values()]
+}
+
+function documentIds(text: string) {
+  return [...text.matchAll(/(Dok(?:ument)?\.?\s*`?)?(\d{5,6})\b/g)]
+    .filter((match) => {
+      const before = text.slice(Math.max(0, match.index - 32), match.index)
+      const hasDocumentMarker = Boolean(match[1])
+      const isSourceLine = /Quelle[n]?:/i.test(text)
+      const isMeetingId = /sitzung|sitzungsdatensatz|sitzungsdatensatz\s*$/i.test(before)
+      return !isMeetingId && (hasDocumentMarker || isSourceLine)
+    })
+    .map((match) => match[2])
+}
+
+function sourceFromInlineReference(documentId: string, context: string): AgentSource {
+  const explicitUrl = context.match(/https?:\/\/\S+/)?.[0].replace(/[).,;]+$/, '') ?? null
+  const sourceText = context.split(/Quelle[n]?:/i).pop() ?? context
+  const label = sourceText
+    .split(new RegExp(`(?:Dok(?:ument)?\\.?\\s*` + '`?' + `)?${documentId}\\b`, 'i'))[0]
+    .replace(/SessionNet-Sitzung\s*`?\d+`?,?/i, '')
+    .replace(/https?:\/\/\S+/, '')
+    .replace(/Dok(?:ument)?\.?\s*`?$/i, '')
+    .replace(/[`*_]/g, '')
+    .replace(/[,;:–—\s]+$/g, '')
+    .replace(/^[,;:–—\s]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const title = enrichedSourceTitle(label, context, documentId)
+  return {
+    title: title || `Dokument ${documentId}`,
+    url: explicitUrl ?? documentDownloadUrl(documentId),
+    snippet: null,
+    document_id: documentId,
+    body_name: null,
+    meeting_date: null,
+    document_type: 'document',
+  }
+}
+
+function enrichedSourceTitle(label: string, context: string, documentId: string) {
+  const cleanedLabel = label || `Dokument ${documentId}`
+  const body = context.match(/Stadtverordnetenversammlung|Haupt-, Finanz- und Rechtsausschuss|Stadtentwicklungs-, Umwelt- und Energieausschuss|Ortsbeirat [A-Za-zÄÖÜäöüß\- ]+/)?.[0]
+  const date = context.match(/\b\d{2}\.\d{2}\.\d{4}\b/)?.[0]
+  if (body && date) return `${cleanedLabel} zur ${body} vom ${date}`
+  if (body) return `${cleanedLabel} zur ${body}`
+  if (date) return `${cleanedLabel} vom ${date}`
+  return cleanedLabel
+}
+
+function sourceTypeLabel(documentType: string | null) {
+  if (documentType === 'document') return 'Dokument'
+  if (documentType === 'extracted') return 'Quelle'
+  return documentType ?? 'Quelle'
+}
+
+function sourceIndexByDocument(sources: AgentSource[]) {
+  const index = new Map<string, number>()
+  sources.forEach((source, sourceIndex) => {
+    const documentId = source.document_id?.match(/\d{4,}/)?.[0]
+    if (documentId && !index.has(documentId)) index.set(documentId, sourceIndex + 1)
+  })
+  return index
+}
+
+function normalizeInlineDocumentReferences(answer: string, sources: AgentSource[]) {
+  if (sources.length === 0) return answer
+  const index = sourceIndexByDocument(sources)
+  return answer.split('\n').map((line) => normalizeReferenceLine(line, index)).join('\n')
+}
+
+function normalizeReferenceLine(line: string, sourceIndex: Map<string, number>) {
+  if (/Quelle[n]?:/i.test(line)) {
+    const [prefix] = line.split(/Quelle[n]?:/i)
+    const refs = [...new Set(documentIds(line).map((documentId) => sourceIndex.get(documentId)).filter((value): value is number => Boolean(value)))]
+    if (refs.length > 0) return `${prefix.trimEnd()} ${refs.map((ref) => `[${ref}]`).join(' ')}`.trim()
+    if (/Dok(?:ument)?\.?\s*`{2}/i.test(line)) return prefix.trimEnd()
+  }
+  return line.replace(/(?:Dok(?:ument)?\.?\s*)?(\d{5,6})\b/g, (match, documentId: string) => {
+    const ref = sourceIndex.get(documentId)
+    return ref ? `[${ref}]` : match
   })
 }
 

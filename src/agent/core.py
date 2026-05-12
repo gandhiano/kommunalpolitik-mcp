@@ -116,6 +116,11 @@ async def run_agent(
 ) -> AgentResponse:
     from .providers import provider_from_env
 
+    if _agent_runtime() == "opencode":
+        from .opencode_runtime import run_opencode_agent
+
+        return await run_opencode_agent(request)
+
     tools = tools or WitzenhausenAgentTools()
     provider = provider or provider_from_env(request)
     actions: list[AgentAction] = []
@@ -162,8 +167,12 @@ async def run_agent(
 
 
 def _uses_tool_loop(provider: Any) -> bool:
-    runtime = os.environ.get("KOMMUNALPOLITIK_AGENT_RUNTIME", "tool-loop").strip().lower()
+    runtime = _agent_runtime()
     return runtime in {"tool-loop", "agent", "agentic"} and getattr(provider, "name", "none") != "none" and hasattr(provider, "next_agent_step")
+
+
+def _agent_runtime() -> str:
+    return os.environ.get("KOMMUNALPOLITIK_AGENT_RUNTIME", "tool-loop").strip().lower()
 
 
 async def _run_tool_loop(

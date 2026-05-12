@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from src.agent import opencode_runtime
 from src.agent.core import AgentRequest, AgentResponse, AgentSource, run_agent
 
 
@@ -371,3 +372,65 @@ def test_tool_loop_can_list_and_get_meetings() -> None:
 
     assert tools.calls[:2] == [("list_meetings", {"limit": 5}), ("get_meeting", {"meeting_id": "meeting-1"})]
     assert response.sources[0].title == "Tagesordnung Stadtverordnetenversammlung"
+
+
+def test_opencode_runtime_routes_agent_request(monkeypatch) -> None:
+    seen: dict[str, Any] = {}
+
+    def fake_run_opencode_process(prompt: str, request: AgentRequest) -> str:
+        seen["prompt"] = prompt
+        seen["request"] = request
+        return '{"type":"message","content":"## Antwort\\nDer Haushalt braucht weitere Pruefung [1]."}\n'
+
+    monkeypatch.setenv("KOMMUNALPOLITIK_AGENT_RUNTIME", "opencode")
+    monkeypatch.setenv("KOMMUNALPOLITIK_OPENCODE_MODEL_STRONG", "provider/strong-model")
+    monkeypatch.setattr(opencode_runtime, "_run_opencode_process", fake_run_opencode_process)
+
+    response = asyncio.run(
+        run_agent(
+            AgentRequest(
+                task="Bewerte den Haushalt kritisch.",
+                mode="follow_up",
+                agent="scrutiny",
+                messages=[{"role": "user", "content": "Was steht im Haushalt?"}],
+            )
+        )
+    )
+
+    assert response.provider == "opencode"
+    assert response.answer == "## Antwort\nDer Haushalt braucht weitere Pruefung [1]."
+    assert response.sources == []
+    assert response.actions_taken[0].arguments == {
+        "runtime": "opencode",
+        "command": "opencode",
+        "agent": "default",
+    }
+    assert response.model_metadata["model"] == "provider/strong-model"
+    assert "Agent: scrutiny" in seen["prompt"]
+    assert "user: Was steht im Haushalt?" in seen["prompt"]
+    assert seen["request"].task == "Bewerte den Haushalt kritisch."
+
+
+def test_opencode_runtime_uses_agent_override(monkeypatch) -> None:
+    monkeypatch.setenv("KOMMUNALPOLITIK_OPENCODE_AGENT_RESEARCH", "kommunalpolitik-research")
+
+    assert opencode_runtime._opencode_agent(AgentRequest(task="Verkehr", agent="research")) == "kommunalpolitik-research"
+
+
+def test_opencode_runtime_omits_internal_agent_names(monkeypatch) -> None:
+    monkeypatch.setenv("KOMMUNALPOLITIK_OPENCODE_AGENT", "general")
+
+    assert opencode_runtime._opencode_agent(AgentRequest(task="Verkehr", agent="general")) is None
+
+
+def test_opencode_output_parser_handles_plain_text_and_json_events() -> None:
+    assert opencode_runtime._answer_from_output("test-ok") == "test-ok"
+    assert (
+        opencode_runtime._answer_from_output(
+            '{"type":"debug","message":"short"}\n'
+            '{"type":"text","part":{"text":"Antwort aus OpenCode part.text [1]."}}\n'
+            '{"type":"assistant","message":{"content":"Erste belastbare Aussage [1]."}}\n'
+            '{"type":"assistant","text":"Zweite belastbare Aussage [2]."}\n'
+        )
+        == "Antwort aus OpenCode part.text [1].\nErste belastbare Aussage [1].\nZweite belastbare Aussage [2]."
+    )

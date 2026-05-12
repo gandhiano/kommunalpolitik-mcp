@@ -68,6 +68,8 @@ KOMMUNALPOLITIK_MODEL_STRONG=STRONGER_MODEL
 
 ## Server-Side Agent Runtime
 
+Runtime steering, current findings, and OpenCode limitations are tracked in [Agent Runtime Steering](agent-runtime.md).
+
 With a configured LLM provider, the public web `/agent` endpoint uses a server-side tool-loop agent by default. The browser sends the task, while the backend LLM chooses allowed local tool calls (`search_text`, `list_meetings`, `get_meeting`) step by step and then returns the final answer.
 
 ```env
@@ -81,6 +83,37 @@ KOMMUNALPOLITIK_AGENT_RUNTIME=deterministic
 ```
 
 When `KOMMUNALPOLITIK_LLM_PROVIDER=none`, deterministic retrieval is always used.
+
+OpenCode can also be used as a private backend runtime while keeping the same public `/agent` API. In this mode the HTTP app still owns auth, feedback, and response normalization; OpenCode runs server-side and is not exposed directly to browsers.
+
+```env
+KOMMUNALPOLITIK_AGENT_RUNTIME=opencode
+KOMMUNALPOLITIK_OPENCODE_COMMAND=opencode
+KOMMUNALPOLITIK_OPENCODE_MODEL=PROVIDER/MODEL
+```
+
+For lower latency, run a private OpenCode server on loopback and attach requests to it instead of letting every request initialize OpenCode from scratch:
+
+```env
+KOMMUNALPOLITIK_OPENCODE_ATTACH=http://127.0.0.1:PORT
+```
+
+Optional task-specific OpenCode settings:
+
+```env
+KOMMUNALPOLITIK_OPENCODE_AGENT_RESEARCH=research
+KOMMUNALPOLITIK_OPENCODE_AGENT_BRIEFING=briefing
+KOMMUNALPOLITIK_OPENCODE_AGENT_DRAFTING=drafting
+KOMMUNALPOLITIK_OPENCODE_AGENT_SCRUTINY=scrutiny
+KOMMUNALPOLITIK_OPENCODE_MODEL_QUICK=PROVIDER/FAST_MODEL
+KOMMUNALPOLITIK_OPENCODE_MODEL_BALANCED=PROVIDER/BALANCED_MODEL
+KOMMUNALPOLITIK_OPENCODE_MODEL_STRONG=PROVIDER/STRONG_MODEL
+KOMMUNALPOLITIK_OPENCODE_TIMEOUT_SECONDS=120
+```
+
+If no `KOMMUNALPOLITIK_OPENCODE_AGENT*` value is set, OpenCode uses its default primary agent. Configure these variables only with OpenCode primary agents available in that runtime.
+
+Configure OpenCode MCP access only inside the private runtime environment. Do not expose the OpenCode server or the MCP endpoint directly to public users.
 
 Example remote MCP client configuration:
 

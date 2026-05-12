@@ -57,6 +57,7 @@ Possible later model:
 1. Verify Dockerfile, Docker Compose example, and HTTP MCP runtime for private-network MVP usage.
 2. Keep the HTTP/MCP smoke-test workflow current as deployment behavior changes.
 3. Extract a clearer adapter interface once a second municipality is implemented.
+4. Continue the server-side agent runtime refactor described in [Agent Runtime Steering](agent-runtime.md), keeping `/agent` public and `/mcp` private.
 
 ## Caveats
 
