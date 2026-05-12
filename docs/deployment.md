@@ -98,6 +98,12 @@ For lower latency, run a private OpenCode server on loopback and attach requests
 KOMMUNALPOLITIK_OPENCODE_ATTACH=http://127.0.0.1:PORT
 ```
 
+Start `opencode serve` from the repository root so it loads the project-local `opencode.json`, which points the `kommunalpolitik` MCP client to the local backend at `http://127.0.0.1:8000/mcp`. If the HTTP backend runs from another working directory, set:
+
+```env
+KOMMUNALPOLITIK_OPENCODE_DIR=/APP/PATH
+```
+
 Optional task-specific OpenCode settings:
 
 ```env

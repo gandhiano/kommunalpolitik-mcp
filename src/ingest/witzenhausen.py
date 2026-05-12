@@ -217,15 +217,19 @@ def command_documents(
 ) -> dict[str, int]:
     repo.init_schema()
     rows = repo.documents_pending_download(limit)
-    downloaded = 0
+    downloaded = failed = 0
     pdf_dir = data_dir / "raw" / "pdf"
     for row in rows:
         extension = _extension_from_url(row["url"]) or ".pdf"
         target = pdf_dir / f"{row['id']}{extension}"
-        sha256, size = client.download(row["url"], target, force=force)
+        try:
+            sha256, size = client.download(row["url"], target, force=force)
+        except Exception:
+            failed += 1
+            continue
         repo.mark_document_downloaded(row["id"], target, sha256, size)
         downloaded += 1
-    return {"downloaded": downloaded}
+    return {"downloaded": downloaded, "failed": failed}
 
 
 def command_extract_text(repo: SessionNetRepository, data_dir: Path, limit: int | None) -> dict[str, int]:

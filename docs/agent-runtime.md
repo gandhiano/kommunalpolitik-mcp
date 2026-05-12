@@ -30,6 +30,22 @@ KOMMUNALPOLITIK_OPENCODE_ATTACH=http://127.0.0.1:PORT
 
 This still keeps OpenCode private behind the backend boundary.
 
+The repository contains a project-local `opencode.json` that overrides the `kommunalpolitik` MCP server to the local backend endpoint:
+
+```json
+{
+  "mcp": {
+    "kommunalpolitik": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8000/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+Start OpenCode from this repository, or let the backend adapter pass `--dir` to this repository, so OpenCode uses the project-local MCP configuration instead of a global or remote `kommunalpolitik` MCP entry. The backend adapter defaults `--dir` to the backend process working directory; override with `KOMMUNALPOLITIK_OPENCODE_DIR` only when the backend is launched from another directory.
+
 ## Source And Reference Handling
 
 The custom tool-loop returns structured `sources` and `related_sources`. The frontend can link inline citations like `[1]` to source boxes.

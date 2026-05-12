@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import subprocess
 import time
@@ -74,8 +75,7 @@ def _run_opencode_process(prompt: str, request: AgentRequest) -> str:
         command.extend(["--model", model])
     if attach_url := os.environ.get("KOMMUNALPOLITIK_OPENCODE_ATTACH"):
         command.extend(["--attach", attach_url])
-    if workdir := os.environ.get("KOMMUNALPOLITIK_OPENCODE_DIR"):
-        command.extend(["--dir", workdir])
+    command.extend(["--dir", _opencode_dir()])
 
     timeout = _timeout_seconds(request)
     LOGGER.info(
@@ -84,7 +84,7 @@ def _run_opencode_process(prompt: str, request: AgentRequest) -> str:
         bool(_opencode_agent(request)),
         bool(_opencode_model(request)),
         bool(os.environ.get("KOMMUNALPOLITIK_OPENCODE_ATTACH")),
-        bool(os.environ.get("KOMMUNALPOLITIK_OPENCODE_DIR")),
+        True,
         timeout,
     )
     try:
@@ -225,6 +225,10 @@ def _conversation(messages: list[dict[str, str]]) -> str:
 
 def _command_name() -> str:
     return os.environ.get("KOMMUNALPOLITIK_OPENCODE_COMMAND", "opencode").strip() or "opencode"
+
+
+def _opencode_dir() -> str:
+    return os.environ.get("KOMMUNALPOLITIK_OPENCODE_DIR") or str(Path.cwd())
 
 
 def _opencode_agent(request: AgentRequest) -> str | None:
