@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict
+import json
 import os
 import time
 from typing import Any, Protocol
@@ -31,6 +32,14 @@ class AgentProvider(Protocol):
         sources: list[AgentSource],
         context: dict[str, Any],
     ) -> AgentResponse: ...
+
+    async def next_agent_step(
+        self,
+        request: AgentRequest,
+        transcript: list[dict[str, Any]],
+        sources: list[AgentSource],
+        context: dict[str, Any],
+    ) -> dict[str, Any]: ...
 
 
 class NoneProvider:
@@ -82,6 +91,17 @@ class AnthropicProvider:
             {"provider": self.name, "model": self.model, "latency_ms": round((time.monotonic() - started_at) * 1000)},
         )
 
+    async def next_agent_step(
+        self,
+        request: AgentRequest,
+        transcript: list[dict[str, Any]],
+        sources: list[AgentSource],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        prompt = build_agent_step_prompt(request, transcript, sources, context)
+        answer = await asyncio.to_thread(self._complete, prompt)
+        return _json_object(answer)
+
     def _complete(self, prompt: str) -> str:
         response = requests.post(
             "https://api.anthropic.com/v1/messages",
@@ -129,6 +149,17 @@ class OpenAIProvider:
             answer,
             {"provider": self.name, "model": self.model, "latency_ms": round((time.monotonic() - started_at) * 1000)},
         )
+
+    async def next_agent_step(
+        self,
+        request: AgentRequest,
+        transcript: list[dict[str, Any]],
+        sources: list[AgentSource],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        prompt = build_agent_step_prompt(request, transcript, sources, context)
+        answer = await asyncio.to_thread(self._complete, prompt)
+        return _json_object(answer)
 
     def _complete(self, prompt: str) -> str:
         response = requests.post(
@@ -180,7 +211,7 @@ def _model_from_env(request: AgentRequest | None, fallback: str) -> str:
         return default
     if request.research_depth == "quick":
         return os.environ.get("KOMMUNALPOLITIK_MODEL_QUICK") or default
-    if request.research_depth == "deep" or request.mode in {"motion_draft", "follow_up"}:
+    if request.research_depth == "deep" or request.mode in {"motion_draft", "follow_up"} or request.agent in {"drafting", "scrutiny"}:
         return os.environ.get("KOMMUNALPOLITIK_MODEL_STRONG") or default
     return os.environ.get("KOMMUNALPOLITIK_MODEL_BALANCED") or default
 
@@ -199,12 +230,88 @@ Harte Regeln:
 """
 
 
+def build_agent_step_prompt(
+    request: AgentRequest,
+    transcript: list[dict[str, Any]],
+    sources: list[AgentSource],
+    context: dict[str, Any],
+) -> str:
+    return f"""Du bist ein tool-nutzender kommunalpolitischer Agent.
+
+Aktuelle Aufgabe: {request.task}
+Agent: {request.agent}
+Legacy-Modus: {request.mode}
+Recherche-Tiefe: {request.research_depth}
+
+Gespräch bisher:
+{_conversation_for_agent_prompt(request.messages)}
+
+Du darfst genau eine Aktion als JSON-Objekt ausgeben, ohne Markdown.
+
+Erlaubte Tool-Aktionen:
+{{"thought":"kurze Begruendung","tool":"search_text","arguments":{{"query":"Suchanfrage","limit":12,"document_type":null}}}}
+{{"thought":"kurze Begruendung","tool":"list_meetings","arguments":{{"limit":20}}}}
+{{"thought":"kurze Begruendung","tool":"get_meeting","arguments":{{"meeting_id":"..."}}}}
+
+Wenn Du genug Evidenz hast, antworte final:
+{{"thought":"kurze Begruendung","final_answer":"Markdown-Antwort mit Quellenverweisen [1], [2] ..."}}
+
+Werkzeugregeln:
+- Nutze search_text fuer inhaltliche Recherche ueber Protokolle, Vorlagen, Antraege, Bekanntmachungen und Textauszuege.
+- Nutze list_meetings/get_meeting nur fuer konkrete Sitzung, Tagesordnung, TOP oder naechste Sitzung.
+- Bei Fraktionslinien, frueheren Antraegen, Strategie oder Schwachstellen ueber Zeit suche breit im Korpus, nicht nur in der naechsten Sitzung.
+- Fuer Antraege/Fraktionen bevorzuge Suchanfragen mit Stadtverordnetenversammlung, Ausschuss, Antrag, Fraktion, Gruene/Buendnis 90.
+- final_answer darf nur Fakten aus den Quellen/Beobachtungen verwenden und muss Quellen mit [n] zitieren.
+
+Bisherige Quellen:
+{_sources_for_agent_prompt(sources)}
+
+Ausgewaehlte Sitzung, falls vorhanden:
+{_short_json(context.get("meeting"))}
+
+Bisheriger Verlauf:
+{_short_json(transcript)}
+"""
+
+
+def _sources_for_agent_prompt(sources: list[AgentSource]) -> str:
+    if not sources:
+        return "Noch keine Quellen."
+    lines = []
+    for index, source in enumerate(sources[:12], start=1):
+        lines.append(f"[{index}] {source.title or 'Unbenannte Quelle'}")
+        if source.meeting_date or source.body_name:
+            lines.append(f"    Kontext: {source.meeting_date or '?'} / {source.body_name or '?'}")
+        if source.snippet:
+            lines.append(f"    Auszug: {source.snippet[:1000]}")
+    return "\n".join(lines)
+
+
+def _conversation_for_agent_prompt(messages: list[dict[str, str]]) -> str:
+    if not messages:
+        return "-"
+    lines = []
+    for message in messages[-10:]:
+        role = message.get("role", "user")
+        content = message.get("content", "").strip().replace("\n", " ")
+        if content:
+            lines.append(f"{role}: {content[:1200]}")
+    return "\n".join(lines) if lines else "-"
+
+
+def _short_json(value: Any) -> str:
+    if value is None:
+        return "-"
+    return json.dumps(value, ensure_ascii=False, default=str)[:6000]
+
+
 def build_agent_prompt(
     request: AgentRequest,
     sources: list[AgentSource],
     context: dict[str, Any],
 ) -> str:
     lines = [
+        f"Agent: {request.agent}",
         f"Modus: {request.mode}",
         f"Aufgabe: {request.task}",
         "",
@@ -246,6 +353,25 @@ def build_agent_prompt(
 
     lines.extend(["", _mode_instruction(request.mode)])
     return "\n".join(lines)
+
+
+def _json_object(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.strip("`").strip()
+        if stripped.startswith("json"):
+            stripped = stripped[4:].strip()
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        start = stripped.find("{")
+        end = stripped.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise
+        payload = json.loads(stripped[start : end + 1])
+    if not isinstance(payload, dict):
+        raise ValueError("Agent step must be a JSON object")
+    return payload
 
 
 def _mode_instruction(mode: str) -> str:

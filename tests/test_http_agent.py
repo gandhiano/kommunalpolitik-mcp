@@ -48,6 +48,61 @@ def test_agent_endpoint_returns_agent_response(monkeypatch) -> None:
     assert response.json()["provider"] == "none"
 
 
+def test_agent_endpoint_accepts_chat_messages_and_agent(monkeypatch) -> None:
+    from starlette.testclient import TestClient
+
+    seen = {}
+
+    async def fake_run_agent(request):
+        seen["task"] = request.task
+        seen["agent"] = request.agent
+        seen["mode"] = request.mode
+        seen["messages"] = request.messages
+        return AgentResponse(
+            mode=request.mode,
+            answer=f"answer for {request.task}",
+            sources=[],
+            actions_taken=[],
+        )
+
+    monkeypatch.setattr(http_server, "run_agent", fake_run_agent)
+
+    with TestClient(http_server.create_app()) as client:
+        response = client.post(
+            "/agent",
+            json={
+                "agent": "scrutiny",
+                "messages": [
+                    {"role": "user", "content": "Finde frühere Verkehrsanträge."},
+                    {"role": "assistant", "content": "Ich suche."},
+                    {"role": "user", "content": "Bewerte die Schwächen."},
+                ],
+            },
+        )
+
+    assert response.status_code == 200
+    assert seen == {
+        "task": "Bewerte die Schwächen.",
+        "agent": "scrutiny",
+        "mode": "follow_up",
+        "messages": [
+            {"role": "user", "content": "Finde frühere Verkehrsanträge."},
+            {"role": "assistant", "content": "Ich suche."},
+            {"role": "user", "content": "Bewerte die Schwächen."},
+        ],
+    }
+
+
+def test_agent_endpoint_rejects_unknown_agent() -> None:
+    from starlette.testclient import TestClient
+
+    with TestClient(http_server.create_app()) as client:
+        response = client.post("/agent", json={"agent": "unknown", "task": "Haushalt"})
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Unsupported agent: unknown"
+
+
 def test_agent_endpoint_returns_503_when_database_is_missing(monkeypatch) -> None:
     from starlette.testclient import TestClient
 

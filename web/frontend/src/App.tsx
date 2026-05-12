@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import './App.css'
 
-type AgentMode = 'research' | 'briefing' | 'motion_draft' | 'follow_up'
+type Role = 'user' | 'assistant'
+type AgentKind = 'general' | 'research' | 'briefing' | 'drafting' | 'scrutiny'
 type ResearchDepth = 'quick' | 'auto' | 'deep'
 
 interface AgentSource {
@@ -20,19 +21,22 @@ interface AgentAction {
 }
 
 interface AgentResponse {
-  mode: AgentMode
+  mode: string
   answer: string
   sources: AgentSource[]
   related_sources: AgentSource[]
   actions_taken: AgentAction[]
-  draft: null | {
-    title?: string
-    resolution?: string[]
-    rationale?: string[]
-    precedent_count?: number
-  }
+  draft: null | Record<string, unknown>
   provider: string
   model_metadata: Record<string, unknown>
+}
+
+interface ChatMessage {
+  id: string
+  role: Role
+  content: string
+  response?: AgentResponse
+  requestTask?: string
 }
 
 interface AuthStatus {
@@ -40,57 +44,29 @@ interface AuthStatus {
   auth_enabled: boolean
 }
 
-const modes: Array<{
-  id: AgentMode
-  title: string
-  eyebrow: string
-  description: string
-  prompt: string
-}> = [
-  {
-    id: 'research',
-    title: 'Recherche',
-    eyebrow: 'Quellen finden',
-    description: 'Durchsucht Protokolle, Vorlagen und Anträge mit belegbaren Fundstellen.',
-    prompt: 'Welche Beschlüsse oder Diskussionen gab es zum Haushalt seit 2021?',
-  },
-  {
-    id: 'briefing',
-    title: 'Briefing',
-    eyebrow: 'Sitzung vorbereiten',
-    description: 'Sammelt relevante Unterlagen und macht daraus eine arbeitsfähige Grundlage.',
-    prompt: 'Erstelle mir ein Briefing zur nächsten Stadtverordnetenversammlung.',
-  },
-  {
-    id: 'motion_draft',
-    title: 'Antrag',
-    eyebrow: 'Entwurf starten',
-    description: 'Findet Präzedenzfälle und baut eine editierbare Antragsstruktur auf.',
-    prompt: 'Hilf mir, einen Antrag zur sicheren Hortbetreuung zu formulieren.',
-  },
-  {
-    id: 'follow_up',
-    title: 'Nachfrage',
-    eyebrow: 'Weiterdenken',
-    description: 'Vertieft ein Thema, sucht Gegenargumente oder ergänzt weitere Quellen.',
-    prompt: 'Welche Gegenargumente oder früheren Beschlüsse muss ich beachten?',
-  },
+const starters = [
+  'Finde frühere Anträge der Grünen zum Thema Verkehr und bewerte die Argumentationslinie.',
+  'Was steht in der nächsten Stadtverordnetenversammlung an?',
+  'Welche Beschlüsse oder Diskussionen gab es zum Haushalt seit 2021?',
+  'Hilf mir, einen Antrag zur sicheren Hortbetreuung vorzubereiten.',
 ]
 
-const examples = [
-  'Finde frühere Anträge der Grünen zum Thema Verkehr.',
-  'Was steht in der nächsten Stadtverordnetenversammlung an?',
-  'Welche Dokumente sind zum Thema Kinderbetreuung relevant?',
+const agents: Array<{ id: AgentKind; label: string; description: string }> = [
+  { id: 'general', label: 'Allround-Agent', description: 'Entscheidet selbst, welche Werkzeuge passen.' },
+  { id: 'research', label: 'Recherche-Agent', description: 'Sucht Belege, Chronologien und Quellen.' },
+  { id: 'briefing', label: 'Briefing-Agent', description: 'Bereitet Sitzungen und TOPs vor.' },
+  { id: 'drafting', label: 'Antrags-Agent', description: 'Hilft bei Anträgen und Änderungsanträgen.' },
+  { id: 'scrutiny', label: 'Prüf-Agent', description: 'Sucht Schwächen, Risiken und Gegenargumente.' },
 ]
 
 function App() {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
-  const [mode, setMode] = useState<AgentMode>('research')
-  const [task, setTask] = useState(modes[0].prompt)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [agent, setAgent] = useState<AgentKind>('general')
   const [researchDepth, setResearchDepth] = useState<ResearchDepth>('auto')
-  const [response, setResponse] = useState<AgentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -122,231 +98,226 @@ function App() {
     setAuthStatus((await res.json()) as AuthStatus)
   }
 
-  async function runAgent() {
-    if (task.trim().length < 3) return
+  async function sendMessage(text = input) {
+    const content = text.trim()
+    if (content.length < 3 || loading) return
+
+    const userMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', content }
+    const nextMessages = [...messages, userMessage]
+    setMessages(nextMessages)
+    setInput('')
     setLoading(true)
     setError(null)
+    const startedAt = performance.now()
+    console.info('[agent] request start', {
+      agent,
+      researchDepth,
+      messages: nextMessages.length,
+      taskChars: content.length,
+    })
+
     try {
       const res = await fetch('/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: task.trim(), mode, research_depth: researchDepth }),
+        body: JSON.stringify({
+          agent,
+          messages: nextMessages.map((message) => ({ role: message.role, content: message.content })),
+          research_depth: researchDepth,
+        }),
+      })
+      console.info('[agent] response received', {
+        status: res.status,
+        ok: res.ok,
+        elapsedMs: Math.round(performance.now() - startedAt),
       })
       if (!res.ok) {
-        if (res.status === 401) {
-          setAuthStatus({ authenticated: false, auth_enabled: true })
-        }
+        if (res.status === 401) setAuthStatus({ authenticated: false, auth_enabled: true })
         throw new Error(await responseError(res))
       }
-      setResponse((await res.json()) as AgentResponse)
+      const response = (await res.json()) as AgentResponse
+      console.info('[agent] response parsed', {
+        provider: response.provider,
+        answerChars: response.answer.length,
+        sources: response.sources.length,
+        actions: response.actions_taken.length,
+      })
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: 'assistant', content: response.answer, requestTask: content, response },
+      ])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
+      console.error('[agent] request failed', { message, elapsedMs: Math.round(performance.now() - startedAt) })
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
-  const activeMode = modes.find((candidate) => candidate.id === mode) ?? modes[0]
-
-  if (!authStatus) {
-    return (
-      <main className="shell auth-shell">
-        <section className="login-card">
-          <div className="brandline">
-            <span className="brandmark">KP</span>
-            <span>Kommunalpolitik Workbench</span>
-          </div>
-          <p className="lead">Zugang wird geprüft ...</p>
-        </section>
-      </main>
-    )
-  }
-
+  if (!authStatus) return <LoadingScreen />
   if (authStatus.auth_enabled && !authStatus.authenticated) {
-    return (
-      <main className="shell auth-shell">
-        <section className="login-card">
-          <div className="brandline">
-            <span className="brandmark">KP</span>
-            <span>Kommunalpolitik Workbench</span>
-          </div>
-          <p className="kicker">Pilot-Zugang</p>
-          <h1>Geschützter Arbeitsbereich für die erste Nutzung.</h1>
-          <p className="lead">Melde dich mit dem Pilot-Passwort an. LLM-Schlüssel und kommunale Daten bleiben serverseitig.</p>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              void login()
-            }}
-          >
-            <label>
-              Passwort
-              <input autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
-            </label>
-            <button className="run-button" type="submit">Einloggen</button>
-          </form>
-          {authError && <div className="error-box">{authError}</div>}
-        </section>
-      </main>
-    )
+    return <LoginScreen authError={authError} login={login} password={password} setPassword={setPassword} />
   }
 
   return (
-    <main className="shell">
-      <section className="hero-panel">
+    <main className="chat-shell">
+      <header className="chat-header">
         <div className="brandline">
           <span className="brandmark">KP</span>
           <span>Kommunalpolitik Workbench</span>
         </div>
-        <div className="hero-grid">
-          <div>
-            <p className="kicker">Pilot für die grüne Fraktionsarbeit</p>
-            <h1>Agentische Recherche mit belastbaren Fundstellen.</h1>
-            <p className="lead">
-              Frage nach Sitzungen, früheren Beschlüssen oder Antragsideen. Der Server-Agent
-              recherchiert zuerst im kommunalen Korpus und formuliert dann mit dem konfigurierten
-              LLM eine quellengebundene Antwort.
-            </p>
-          </div>
-          <aside className="status-card" aria-label="Systemstatus">
-            <span className="pulse" />
-            <strong>Server-side Agent</strong>
-            <p>LLM-Schlüssel bleiben auf dem Server. Die Antwort zeigt den tatsächlich genutzten Provider.</p>
-          </aside>
+        <div className="chat-controls">
+          <label className="depth-control compact-depth">
+            Agent
+            <select value={agent} onChange={(event) => setAgent(event.target.value as AgentKind)}>
+              {agents.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="depth-control compact-depth">
+            Tiefe
+            <select value={researchDepth} onChange={(event) => setResearchDepth(event.target.value as ResearchDepth)}>
+              <option value="quick">Schnell</option>
+              <option value="auto">Auto</option>
+              <option value="deep">Gründlich</option>
+            </select>
+          </label>
         </div>
+      </header>
+
+      <section className="chat-panel">
+        {messages.length === 0 && <Welcome agent={agent} sendMessage={sendMessage} />}
+        {messages.map((message) => <ChatBubble key={message.id} message={message} researchDepth={researchDepth} />)}
+        {loading && <div className="assistant-thinking">Der Agent recherchiert mit seinen Werkzeugen ...</div>}
+        {error && <div className="error-box">{error}</div>}
       </section>
 
-      <section className="workspace">
-        <div className="mode-rail" aria-label="Arbeitsmodus wählen">
-          {modes.map((item) => (
-            <button
-              key={item.id}
-              className={item.id === mode ? 'mode-card active' : 'mode-card'}
-              type="button"
-              onClick={() => {
-                setMode(item.id)
-                setTask(item.prompt)
-              }}
-            >
-              <span>{item.eyebrow}</span>
-              <strong>{item.title}</strong>
-              <small>{item.description}</small>
-            </button>
-          ))}
-        </div>
-
-        <div className="agent-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="kicker">{activeMode.eyebrow}</p>
-              <h2>{activeMode.title}</h2>
-            </div>
-            <label className="depth-control">
-              Recherche-Tiefe
-              <select value={researchDepth} onChange={(event) => setResearchDepth(event.target.value as ResearchDepth)}>
-                <option value="auto">Auto</option>
-                <option value="quick">Schnell</option>
-                <option value="deep">Gründlich</option>
-              </select>
-            </label>
-          </div>
-
-          <textarea
-            value={task}
-            onChange={(event) => setTask(event.target.value)}
-            rows={5}
-            placeholder="Was möchtest Du kommunalpolitisch klären oder vorbereiten?"
-          />
-
-          <div className="examples">
-            {examples.map((example) => (
-              <button key={example} type="button" onClick={() => setTask(example)}>
-                {example}
-              </button>
-            ))}
-          </div>
-
-          <button className="run-button" type="button" disabled={loading} onClick={() => void runAgent()}>
-            {loading ? 'Arbeite mit Quellen ...' : 'Agent starten'}
-          </button>
-
-          {error && <div className="error-box">{error}</div>}
-        </div>
-      </section>
-
-      {response && <Results researchDepth={researchDepth} requestTask={task} response={response} />}
+      <form
+        className="chat-composer"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void sendMessage()
+        }}
+      >
+        <textarea
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              void sendMessage()
+            }
+          }}
+          placeholder="Frag den kommunalpolitischen Agenten ..."
+          rows={2}
+        />
+        <button disabled={loading || input.trim().length < 3} type="submit">Senden</button>
+      </form>
     </main>
   )
 }
 
-function Results({ researchDepth, requestTask, response }: { researchDepth: ResearchDepth; requestTask: string; response: AgentResponse }) {
-  const [activeSourceIndex, setActiveSourceIndex] = useState(0)
-  const activeSource = response.sources[activeSourceIndex] ?? response.sources[0] ?? null
-
+function LoadingScreen() {
   return (
-    <section className="results-grid">
-      <article className="answer-card">
-        <div className="panel-heading">
-          <div>
-            <p className="kicker">Antwort</p>
-            <h2>{labelForMode(response.mode)}</h2>
-          </div>
-          <span className="provider-pill">{response.provider}</span>
-        </div>
-        <MarkdownText
-          onCitationFocus={(index) => setActiveSourceIndex(index - 1)}
-          sourceCount={response.sources.length}
-          text={response.answer}
-        />
-        <FeedbackBox requestTask={requestTask} researchDepth={researchDepth} response={response} />
-        {response.draft && <DraftPreview draft={response.draft} />}
-
-        <section className="used-sources-section">
-          <p className="kicker">Im Bericht verwendet</p>
-          <SourceList sources={response.sources} onSourceFocus={setActiveSourceIndex} />
-        </section>
-      </article>
-
-      <aside className="side-stack">
-        <ContextBox response={response} source={activeSource} sourceIndex={activeSourceIndex + 1} />
-
-        {response.related_sources.length > 0 && (
-          <section className="source-card related-card">
-            <details>
-              <summary>Weitere relevante Treffer ({response.related_sources.length})</summary>
-              <div className="sources related-sources">
-                {response.related_sources.map((source, index) => (
-                  <a
-                    className="source-item compact"
-                    href={source.url ?? '#'}
-                    key={`${source.document_id}-related-${index}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span className="source-meta">{source.meeting_date ?? source.document_type ?? 'Quelle'}</span>
-                    <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
-                    <small>{source.body_name}</small>
-                  </a>
-                ))}
-              </div>
-            </details>
-          </section>
-        )}
-
-        <section className="trace-card">
-          <p className="kicker">Rechercheweg</p>
-          <ol>
-            {response.actions_taken.map((action, index) => (
-              <li key={`${action.name}-${index}`}>
-                <strong>{action.name}</strong>
-                <span>{JSON.stringify(action.arguments)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </aside>
-    </section>
+    <main className="shell auth-shell">
+      <section className="login-card">
+        <div className="brandline"><span className="brandmark">KP</span><span>Kommunalpolitik Workbench</span></div>
+        <p className="lead">Zugang wird geprüft ...</p>
+      </section>
+    </main>
   )
+}
+
+function LoginScreen({ authError, login, password, setPassword }: { authError: string | null; login: () => Promise<void>; password: string; setPassword: (value: string) => void }) {
+  return (
+    <main className="shell auth-shell">
+      <section className="login-card">
+        <div className="brandline"><span className="brandmark">KP</span><span>Kommunalpolitik Workbench</span></div>
+        <p className="kicker">Pilot-Zugang</p>
+        <h1>Geschützter Agentenchat für kommunalpolitische Arbeit.</h1>
+        <p className="lead">Melde dich mit dem Pilot-Passwort an. Der Agent läuft serverseitig und nutzt dort seine Werkzeuge.</p>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void login()
+          }}
+        >
+          <label>Passwort<input autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" /></label>
+          <button className="run-button" type="submit">Einloggen</button>
+        </form>
+        {authError && <div className="error-box">{authError}</div>}
+      </section>
+    </main>
+  )
+}
+
+function Welcome({ agent, sendMessage }: { agent: AgentKind; sendMessage: (text: string) => Promise<void> }) {
+  const activeAgent = agents.find((item) => item.id === agent) ?? agents[0]
+  return (
+    <div className="welcome-card">
+      <p className="kicker">Agentenchat</p>
+      <h1>Frag wie in einem MCP-fähigen Agentenclient.</h1>
+      <p>{activeAgent.label}: {activeAgent.description} Der Backend-Agent entscheidet selbst, welche lokalen kommunalpolitischen Werkzeuge er nutzt.</p>
+      <div className="starter-grid">
+        {starters.map((starter) => <button key={starter} onClick={() => void sendMessage(starter)} type="button">{starter}</button>)}
+      </div>
+    </div>
+  )
+}
+
+function ChatBubble({ message, researchDepth }: { message: ChatMessage; researchDepth: ResearchDepth }) {
+  const response = message.response
+  const display = response ? displayAnswer(response) : { text: message.content, sources: [] }
+  const sourceBaseId = `sources-${message.id}`
+  return (
+    <article className={`chat-bubble ${message.role}`}>
+      {message.role === 'user' ? <p>{message.content}</p> : <MarkdownText sourceBaseId={sourceBaseId} sources={display.sources} text={display.text} />}
+      {response && <AnswerDetails displaySources={display.sources} researchDepth={researchDepth} requestTask={message.requestTask ?? message.content} response={response} sourceBaseId={sourceBaseId} />}
+    </article>
+  )
+}
+
+function AnswerDetails({ displaySources, researchDepth, requestTask, response, sourceBaseId }: { displaySources: AgentSource[]; researchDepth: ResearchDepth; requestTask: string; response: AgentResponse; sourceBaseId: string }) {
+  const latency = typeof response.model_metadata.latency_ms === 'number' ? `${response.model_metadata.latency_ms} ms` : null
+  return (
+    <div className="answer-details">
+      <div className="answer-meta"><span>{response.provider}</span><span>{displaySources.length} Quellen</span>{latency && <span>{latency}</span>}</div>
+      {displaySources.length > 0 && <SourceList baseId={sourceBaseId} sources={displaySources} />}
+      <details className="trace-card inline-trace">
+        <summary>Rechercheweg</summary>
+        <ol>{response.actions_taken.map((action, index) => <li key={`${action.name}-${index}`}><strong>{action.name}</strong><span>{JSON.stringify(action.arguments)}</span></li>)}</ol>
+      </details>
+      <FeedbackBox requestTask={requestTask || response.answer.slice(0, 200)} researchDepth={researchDepth} response={response} />
+    </div>
+  )
+}
+
+function SourceList({ baseId, sources }: { baseId: string; sources: AgentSource[] }) {
+  return (
+    <div className="sources used-sources chat-sources">
+      {sources.map((source, index) => {
+        const href = source.url ?? documentDownloadUrl(source.document_id)
+        return (
+          <a className="source-item" href={href ?? `#${baseId}-${index + 1}`} id={`${baseId}-${index + 1}`} key={`${source.document_id}-${index}`} rel="noreferrer" target={href ? '_blank' : undefined}>
+            <span className="source-meta"><span className="source-number">[{index + 1}]</span>{source.meeting_date ?? sourceTypeLabel(source.document_type)}</span>
+            <strong><InlineMarkdown text={source.title ?? 'Unbenannte Quelle'} /></strong>
+            <small>{source.body_name}</small>
+            {source.snippet && <p><InlineMarkdown text={source.snippet} /></p>}
+            {href && <span className="source-download">Original öffnen</span>}
+          </a>
+        )
+      })}
+    </div>
+  )
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  return <>{renderInline(text, '', 0, new Map())}</>
+}
+
+function documentDownloadUrl(documentId: string | null) {
+  const id = documentId?.match(/^\d{5,6}$/)?.[0]
+  return id ? `https://sessionnet.owl-it.de/witzenhausen/BI/getfile.asp?id=${id}&type=do` : null
 }
 
 function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: string; researchDepth: ResearchDepth; response: AgentResponse }) {
@@ -378,7 +349,7 @@ function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: st
         }),
       })
       if (!res.ok) throw new Error(await responseError(res))
-      setStatus(nextRating === rating ? 'Kommentar aktualisiert. Danke.' : 'Danke. Du kannst optional noch kurz ergänzen, was gut war oder fehlt.')
+      setStatus(nextRating === rating ? 'Kommentar aktualisiert. Danke.' : 'Danke. Optional kannst du noch ergänzen, was gut war oder fehlt.')
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Feedback konnte nicht gespeichert werden.')
     } finally {
@@ -387,252 +358,255 @@ function FeedbackBox({ requestTask, researchDepth, response }: { requestTask: st
   }
 
   return (
-    <section className="feedback-box" aria-label="Antwort bewerten">
-      <div>
-        <p className="kicker">Feedback</p>
-        <p className="feedback-privacy">Mit Klick sendest Du anonym Frage, Antwort, Quellen-Metadaten und Bewertung zur Auswertung und Verbesserung.</p>
-      </div>
+    <section className="feedback-box compact-feedback" aria-label="Antwort bewerten">
+      <p className="feedback-privacy">Klick sendet anonym Frage, Antwort, Quellen-Metadaten und Bewertung zur Verbesserung.</p>
       <div className="feedback-actions">
-        <button aria-label="Antwort hilfreich bewerten" className={rating === 'up' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('up')} type="button">
-          <span aria-hidden="true" className="thumb-icon">👍</span>
-          <span>Hilfreich</span>
-        </button>
-        <button aria-label="Antwort nicht hilfreich bewerten" className={rating === 'down' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('down')} type="button">
-          <span aria-hidden="true" className="thumb-icon">👎</span>
-          <span>Nicht hilfreich</span>
-        </button>
+        <button aria-label="Antwort hilfreich bewerten" className={rating === 'up' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('up')} type="button"><span aria-hidden="true" className="thumb-icon">👍</span><span>Hilfreich</span></button>
+        <button aria-label="Antwort nicht hilfreich bewerten" className={rating === 'down' ? 'selected' : ''} disabled={submitting} onClick={() => void submitFeedback('down')} type="button"><span aria-hidden="true" className="thumb-icon">👎</span><span>Nicht hilfreich</span></button>
       </div>
-      {rating && (
-        <div className="feedback-comment">
-          <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Optional: Was war gut, falsch oder fehlt?" rows={3} />
-          <button disabled={submitting || comment.trim().length === 0} onClick={() => void submitFeedback(rating)} type="button">Kommentar senden</button>
-        </div>
-      )}
+      {rating && <div className="feedback-comment"><textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Optional: Was war gut, falsch oder fehlt?" rows={2} /><button disabled={submitting || comment.trim().length === 0} onClick={() => void submitFeedback(rating)} type="button">Kommentar senden</button></div>}
       {status && <p className="feedback-status">{status}</p>}
     </section>
   )
 }
 
-function SourceList({ sources, onSourceFocus }: { sources: AgentSource[]; onSourceFocus: (index: number) => void }) {
-  return (
-    <div className="sources used-sources">
-      {sources.map((source, index) => (
-        <a
-          className="source-item"
-          href={source.url ?? '#'}
-          id={`source-${index + 1}`}
-          key={`${source.document_id}-${index}`}
-          onFocus={() => onSourceFocus(index)}
-          onMouseEnter={() => onSourceFocus(index)}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <span className="source-meta">
-            <span className="source-number">[{index + 1}]</span>
-            {source.meeting_date ?? source.document_type ?? 'Quelle'}
-          </span>
-          <strong>{source.title ?? 'Unbenannte Quelle'}</strong>
-          <small>{source.body_name}</small>
-          {source.snippet && <p>{source.snippet}</p>}
-        </a>
-      ))}
-      {sources.length === 0 && <p className="empty">Keine Quellen gefunden.</p>}
-    </div>
-  )
-}
-
-function ContextBox({ response, source, sourceIndex }: { response: AgentResponse; source: AgentSource | null; sourceIndex: number }) {
-  const retrievalPlan = response.actions_taken.find((action) => action.name === 'plan_retrieval')?.arguments
-
-  return (
-    <section className="source-card context-card">
-      <p className="kicker">Kontext</p>
-      <p>{extractTlDr(response.answer)}</p>
-
-      <div className="context-metrics">
-        <span>{response.sources.length} zitierte Quellen</span>
-        <span>{response.related_sources.length} weitere Treffer</span>
-        {typeof retrievalPlan?.depth === 'string' && <span>Tiefe: {depthLabel(retrievalPlan.depth)}</span>}
-      </div>
-
-      {source && (
-        <div className="focused-source">
-          <span className="source-meta">
-            <span className="source-number">[{sourceIndex}]</span>
-            {source.meeting_date ?? source.document_type ?? 'Quelle'}
-          </span>
-          <p>{source.title ?? 'Unbenannte Quelle'}</p>
-          {source.url && (
-            <a className="source-open-link" href={source.url} rel="noreferrer" target="_blank">
-              Original öffnen
-            </a>
-          )}
-        </div>
-      )}
-    </section>
-  )
-}
-
-function depthLabel(depth: string) {
-  if (depth === 'quick') return 'schnell'
-  if (depth === 'deep') return 'gründlich'
-  return 'auto'
-}
-
-function extractTlDr(answer: string) {
-  const lines = answer.split('\n').map((line) => line.trim()).filter(Boolean)
-  const content = lines.find((line) => !line.startsWith('#') && !line.startsWith('- ') && !/^\d+[.)]\s+/.test(line))
-  if (!content) return 'Die Antwort fasst die wichtigsten belegten Punkte aus den gefundenen Quellen zusammen.'
-  return content.replace(/\*\*/g, '').slice(0, 280)
-}
-
-function MarkdownText({
-  onCitationFocus,
-  sourceCount,
-  text,
-}: {
-  onCitationFocus: (index: number) => void
-  sourceCount: number
-  text: string
-}) {
+function MarkdownText({ sourceBaseId, sources, text }: { sourceBaseId: string; sources: AgentSource[]; text: string }) {
   const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
+  const sourceIndex = sourceIndexByDocument(sources)
+  return <div className="markdown-answer">{blocks.map((block, index) => <MarkdownBlock block={block} key={index} sourceBaseId={sourceBaseId} sourceCount={sources.length} sourceIndex={sourceIndex} />)}</div>
+}
 
+function MarkdownBlock({ block, sourceBaseId, sourceCount, sourceIndex }: { block: string; sourceBaseId: string; sourceCount: number; sourceIndex: Map<string, number> }) {
+  const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
+  const firstLine = lines[0] ?? ''
+  if (isMarkdownTable(lines)) return <MarkdownTable lines={lines} sourceBaseId={sourceBaseId} sourceCount={sourceCount} sourceIndex={sourceIndex} />
+  if (/^#{1,3}\s+/.test(firstLine)) return <><h3>{renderInline(firstLine.replace(/^#{1,3}\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</h3>{renderLines(lines.slice(1), sourceBaseId, sourceCount, sourceIndex)}</>
+  if (lines.every((line) => /^[-*]\s+/.test(line))) return <ul>{lines.map((line) => <li key={line}>{renderInline(line.replace(/^[-*]\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</li>)}</ul>
+  if (lines.every((line) => /^\d+[.)]\s+/.test(line))) return <ol>{lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceBaseId, sourceCount, sourceIndex)}</li>)}</ol>
+  return <>{renderLines(lines, sourceBaseId, sourceCount, sourceIndex)}</>
+}
+
+function MarkdownTable({ lines, sourceBaseId, sourceCount, sourceIndex }: { lines: string[]; sourceBaseId: string; sourceCount: number; sourceIndex: Map<string, number> }) {
+  const rows = lines.filter((line) => !/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line)).map(tableCells)
+  const [header, ...body] = rows
   return (
-    <div className="markdown-answer">
-      {blocks.map((block, index) => {
-        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
-        const firstLine = lines[0] ?? ''
-
-        if (firstLine.startsWith('### ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(4)} lines={lines.slice(1)} level="h4" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
-        }
-        if (firstLine.startsWith('## ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(3)} lines={lines.slice(1)} level="h3" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
-        }
-        if (firstLine.startsWith('# ')) {
-          return <BlockWithHeading key={index} heading={firstLine.slice(2)} lines={lines.slice(1)} level="h3" onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
-        }
-        return <MarkdownLines key={index} lines={lines} onCitationFocus={onCitationFocus} sourceCount={sourceCount} />
-      })}
+    <div className="table-wrap">
+      <table>
+        <thead><tr>{header.map((cell) => <th key={cell}>{renderInline(cell, sourceBaseId, sourceCount, sourceIndex)}</th>)}</tr></thead>
+        <tbody>{body.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{renderInline(cell, sourceBaseId, sourceCount, sourceIndex)}</td>)}</tr>)}</tbody>
+      </table>
     </div>
   )
 }
 
-function BlockWithHeading({
-  heading,
-  lines,
-  level,
-  onCitationFocus,
-  sourceCount,
-}: {
-  heading: string
-  lines: string[]
-  level: 'h3' | 'h4'
-  onCitationFocus: (index: number) => void
-  sourceCount: number
-}) {
-  const Heading = level
-  return (
-    <div>
-      <Heading>{renderInline(heading, sourceCount, onCitationFocus)}</Heading>
-      {lines.length > 0 && <MarkdownLines lines={lines} onCitationFocus={onCitationFocus} sourceCount={sourceCount} />}
-    </div>
-  )
+function isMarkdownTable(lines: string[]) {
+  return lines.length >= 2 && lines[0].includes('|') && /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(lines[1])
 }
 
-function MarkdownLines({
-  lines,
-  onCitationFocus,
-  sourceCount,
-}: {
-  lines: string[]
-  onCitationFocus: (index: number) => void
-  sourceCount: number
-}) {
-  const bulletItems = parseBulletItems(lines)
-  if (bulletItems.length > 0) {
-    return (
-      <ul>
-        {bulletItems.map((line) => <li key={line}>{renderInline(line, sourceCount, onCitationFocus)}</li>)}
-      </ul>
-    )
-  }
-
-  if (lines.every((line) => /^\d+[.)]\s+/.test(line))) {
-    return (
-      <ol>
-        {lines.map((line) => <li key={line}>{renderInline(line.replace(/^\d+[.)]\s+/, ''), sourceCount, onCitationFocus)}</li>)}
-      </ol>
-    )
-  }
-
-  return <p>{renderInline(lines.join(' '), sourceCount, onCitationFocus)}</p>
+function tableCells(line: string) {
+  return line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim())
 }
 
-function parseBulletItems(lines: string[]) {
-  if (lines.every((line) => /^[-*]\s+/.test(line))) {
-    return lines.map((line) => line.replace(/^[-*]\s+/, ''))
-  }
-
-  const joined = lines.join(' ').trim()
-  if (!joined.startsWith('- ')) return []
-  return joined.replace(/^-\s+/, '').split(/\s+-\s+(?=\[\d+\]|\*\*)/).map((item) => item.trim()).filter(Boolean)
-}
-
-function renderInline(text: string, sourceCount: number, onCitationFocus: (index: number) => void) {
-  return text.split(/(\*\*[^*]+\*\*|\[\d+\])/g).map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      const content = part.slice(2, -2)
-      if (/^\[\d+\]$/.test(content)) {
-        return renderCitation(content, sourceCount, onCitationFocus, index)
-      }
-      return <strong key={index}>{content}</strong>
+function renderLines(lines: string[], sourceBaseId: string, sourceCount: number, sourceIndex: Map<string, number>) {
+  if (lines.length === 0) return null
+  const rendered: ReactNode[] = []
+  let index = 0
+  while (index < lines.length) {
+    const line = lines[index]
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^[-*]\s+/.test(lines[index])) items.push(lines[index++].replace(/^[-*]\s+/, ''))
+      rendered.push(<ul key={`ul-${index}`}>{items.map((item) => <li key={item}>{renderInline(item, sourceBaseId, sourceCount, sourceIndex)}</li>)}</ul>)
+      continue
     }
+    if (/^\d+[.)]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^\d+[.)]\s+/.test(lines[index])) items.push(lines[index++].replace(/^\d+[.)]\s+/, ''))
+      rendered.push(<ol key={`ol-${index}`}>{items.map((item) => <li key={item}>{renderInline(item, sourceBaseId, sourceCount, sourceIndex)}</li>)}</ol>)
+      continue
+    }
+    rendered.push(<p key={`p-${index}`}>{renderInline(line, sourceBaseId, sourceCount, sourceIndex)}</p>)
+    index += 1
+  }
+  return rendered
+}
+
+function renderInline(text: string, sourceBaseId: string, sourceCount: number, sourceIndex: Map<string, number>) {
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*|\[\d+\]|Dok(?:ument)?\.?\s*\d{5,6}|\b\d{5,6}\b)/g).map((part, index) => {
+    if (part.startsWith('`') && part.endsWith('`')) return <code key={index}>{part.slice(1, -1)}</code>
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>
     if (/^\[\d+\]$/.test(part)) {
-      return renderCitation(part, sourceCount, onCitationFocus, index)
+      const sourceIndex = Number(part.slice(1, -1))
+      if (sourceIndex >= 1 && sourceIndex <= sourceCount) return <CitationLink key={index} label={part} sourceBaseId={sourceBaseId} sourceNumber={sourceIndex} />
+      if (sourceIndex >= 1) return <span className="citation-link" key={index}>{part}</span>
+    }
+    const documentMatch = part.match(/^(?:Dok(?:ument)?\.?\s*)?(\d{5,6})$/)
+    if (documentMatch) {
+      const sourceNumber = sourceIndex.get(documentMatch[1])
+      if (sourceNumber) return <CitationLink key={index} label={`[${sourceNumber}]`} sourceBaseId={sourceBaseId} sourceNumber={sourceNumber} />
     }
     return <span key={index}>{part}</span>
   })
 }
 
-function renderCitation(text: string, sourceCount: number, onCitationFocus: (index: number) => void, key: number) {
-  const sourceIndex = Number(text.slice(1, -1))
-  if (sourceIndex < 1 || sourceIndex > sourceCount) return <span key={key}>{text}</span>
+function CitationLink({ label, sourceBaseId, sourceNumber }: { label: string; sourceBaseId: string; sourceNumber: number }) {
+  const targetId = `${sourceBaseId}-${sourceNumber}`
   return (
     <a
       className="citation-link"
-      href={`#source-${sourceIndex}`}
-      key={key}
-      onFocus={() => onCitationFocus(sourceIndex)}
-      onMouseEnter={() => onCitationFocus(sourceIndex)}
-      title={`Zur Quelle ${sourceIndex}`}
+      href={`#${targetId}`}
+      onClick={(event) => {
+        const target = document.getElementById(targetId)
+        if (!target) return
+        event.preventDefault()
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        window.history.replaceState(null, '', `#${targetId}`)
+      }}
     >
-      {text}
+      {label}
     </a>
   )
 }
 
-function DraftPreview({ draft }: { draft: NonNullable<AgentResponse['draft']> }) {
-  return (
-    <div className="draft-card">
-      <p className="kicker">Editierbare Vorlage</p>
-      <h3>{draft.title}</h3>
-      <h4>Beschlussvorschlag</h4>
-      <ol>
-        {draft.resolution?.map((item) => <li key={item}>{item}</li>)}
-      </ol>
-      <h4>Begründung</h4>
-      {draft.rationale?.map((item) => <p key={item}>{item}</p>)}
-      <span>{draft.precedent_count ?? 0} Präzedenzfälle gefunden</span>
-    </div>
-  )
+function displayAnswer(response: AgentResponse) {
+  const answer = stripSystemReminders(response.answer)
+  if (response.sources.length > 0) return { text: answer, sources: response.sources }
+  const extracted = extractReferenceSection(answer)
+  if (extracted.sources.length > 0) return { text: extracted.text, sources: extracted.sources }
+  const sources = extractInlineDocumentSources(answer)
+  return { text: normalizeInlineDocumentReferences(answer, sources), sources }
 }
 
-function labelForMode(mode: AgentMode) {
-  if (mode === 'briefing') return 'Briefing-Grundlage'
-  if (mode === 'motion_draft') return 'Antragsvorbereitung'
-  if (mode === 'follow_up') return 'Nachfrage'
-  return 'Rechercheergebnis'
+function stripSystemReminders(text: string) {
+  return text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim()
+}
+
+function extractReferenceSection(answer: string): { text: string; sources: AgentSource[] } {
+  const lines = answer.split('\n')
+  const headingIndex = lines.findIndex((line) => isReferenceHeading(line))
+  if (headingIndex < 0) return { text: answer, sources: [] }
+
+  const headingReference = parseReferenceLine(stripReferenceHeading(lines[headingIndex]))
+  const sources = [headingReference, ...lines.slice(headingIndex + 1).map(parseReferenceLine)].filter((source): source is AgentSource => source !== null)
+  if (sources.length === 0) return { text: answer, sources: [] }
+  return { text: lines.slice(0, headingIndex).join('\n').trim(), sources }
+}
+
+function isReferenceHeading(line: string) {
+  return /^#{0,3}\s*(?:\*\*)?\s*(quellen|sources|referenzen|references)\s*(?:\*\*)?\s*:?/i.test(line.trim())
+}
+
+function stripReferenceHeading(line: string) {
+  return line.trim().replace(/^#{0,3}\s*(?:\*\*)?\s*(quellen|sources|referenzen|references)\s*(?:\*\*)?\s*:?\s*/i, '')
+}
+
+function parseReferenceLine(line: string): AgentSource | null {
+  const match = line.trim().match(/^(?:[-*]\s*)?(?:\d+[.)]\s*)?\[(\d+)\]\s*:?[\s-]*(.+)$/)
+  if (!match) return null
+  const raw = match[2].trim()
+  const url = raw.match(/https?:\/\/\S+/)?.[0].replace(/[).,;]+$/, '') ?? null
+  const title = raw.replace(/https?:\/\/\S+/, '').replace(/^[-:–—\s]+|[-:–—\s]+$/g, '').trim()
+  return {
+    title: title || url || `Quelle ${match[1]}`,
+    url,
+    snippet: null,
+    document_id: `extracted-${match[1]}`,
+    body_name: null,
+    meeting_date: null,
+    document_type: 'extracted',
+  }
+}
+
+function extractInlineDocumentSources(answer: string): AgentSource[] {
+  const sources = new Map<string, AgentSource>()
+  const lines = answer.split('\n').map((line) => line.trim()).filter(Boolean)
+  for (const line of lines) {
+    for (const documentId of documentIds(line)) {
+      if (!sources.has(documentId)) sources.set(documentId, sourceFromInlineReference(documentId, line))
+    }
+  }
+  return [...sources.values()]
+}
+
+function documentIds(text: string) {
+  return [...text.matchAll(/(Dok(?:ument)?\.?\s*`?)?(\d{5,6})\b/g)]
+    .filter((match) => {
+      const before = text.slice(Math.max(0, match.index - 32), match.index)
+      const hasDocumentMarker = Boolean(match[1])
+      const isSourceLine = /Quelle[n]?:/i.test(text)
+      const isMeetingId = /sitzung|sitzungsdatensatz|sitzungsdatensatz\s*$/i.test(before)
+      return !isMeetingId && (hasDocumentMarker || isSourceLine)
+    })
+    .map((match) => match[2])
+}
+
+function sourceFromInlineReference(documentId: string, context: string): AgentSource {
+  const explicitUrl = context.match(/https?:\/\/\S+/)?.[0].replace(/[).,;]+$/, '') ?? null
+  const sourceText = context.split(/Quelle[n]?:/i).pop() ?? context
+  const label = sourceText
+    .split(new RegExp(`(?:Dok(?:ument)?\\.?\\s*` + '`?' + `)?${documentId}\\b`, 'i'))[0]
+    .replace(/SessionNet-Sitzung\s*`?\d+`?,?/i, '')
+    .replace(/https?:\/\/\S+/, '')
+    .replace(/Dok(?:ument)?\.?\s*`?$/i, '')
+    .replace(/[`*_]/g, '')
+    .replace(/[,;:–—\s]+$/g, '')
+    .replace(/^[,;:–—\s]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const title = enrichedSourceTitle(label, context, documentId)
+  return {
+    title: title || `Dokument ${documentId}`,
+    url: explicitUrl ?? documentDownloadUrl(documentId),
+    snippet: null,
+    document_id: documentId,
+    body_name: null,
+    meeting_date: null,
+    document_type: 'document',
+  }
+}
+
+function enrichedSourceTitle(label: string, context: string, documentId: string) {
+  const cleanedLabel = label || `Dokument ${documentId}`
+  const body = context.match(/Stadtverordnetenversammlung|Haupt-, Finanz- und Rechtsausschuss|Stadtentwicklungs-, Umwelt- und Energieausschuss|Ortsbeirat [A-Za-zÄÖÜäöüß\- ]+/)?.[0]
+  const date = context.match(/\b\d{2}\.\d{2}\.\d{4}\b/)?.[0]
+  if (body && date) return `${cleanedLabel} zur ${body} vom ${date}`
+  if (body) return `${cleanedLabel} zur ${body}`
+  if (date) return `${cleanedLabel} vom ${date}`
+  return cleanedLabel
+}
+
+function sourceTypeLabel(documentType: string | null) {
+  if (documentType === 'document') return 'Dokument'
+  if (documentType === 'extracted') return 'Quelle'
+  return documentType ?? 'Quelle'
+}
+
+function sourceIndexByDocument(sources: AgentSource[]) {
+  const index = new Map<string, number>()
+  sources.forEach((source, sourceIndex) => {
+    const documentId = source.document_id?.match(/\d{4,}/)?.[0]
+    if (documentId && !index.has(documentId)) index.set(documentId, sourceIndex + 1)
+  })
+  return index
+}
+
+function normalizeInlineDocumentReferences(answer: string, sources: AgentSource[]) {
+  if (sources.length === 0) return answer
+  const index = sourceIndexByDocument(sources)
+  return answer.split('\n').map((line) => normalizeReferenceLine(line, index)).join('\n')
+}
+
+function normalizeReferenceLine(line: string, sourceIndex: Map<string, number>) {
+  if (/Quelle[n]?:/i.test(line)) {
+    const [prefix] = line.split(/Quelle[n]?:/i)
+    const refs = [...new Set(documentIds(line).map((documentId) => sourceIndex.get(documentId)).filter((value): value is number => Boolean(value)))]
+    if (refs.length > 0) return `${prefix.trimEnd()} ${refs.map((ref) => `[${ref}]`).join(' ')}`.trim()
+    if (/Dok(?:ument)?\.?\s*`{2}/i.test(line)) return prefix.trimEnd()
+  }
+  return line.replace(/(?:Dok(?:ument)?\.?\s*)?(\d{5,6})\b/g, (match, documentId: string) => {
+    const ref = sourceIndex.get(documentId)
+    return ref ? `[${ref}]` : match
+  })
 }
 
 async function responseError(res: Response) {

@@ -86,6 +86,8 @@ Power user agent client
 
 The frontend does not contain LLM keys and does not run the agent. The agent runs server-side.
 
+Runtime steering and current OpenCode findings are tracked in [Agent Runtime Steering](agent-runtime.md).
+
 ## MVP Agent Modes
 
 ### Research
@@ -222,7 +224,7 @@ KOMMUNALPOLITIK_LLM_MODEL=
 
 This is the cleanest way to support local/provider-gateway options if available.
 
-OpenCode itself remains a power-user MCP client path, not a backend LLM provider unless it exposes a compatible API.
+OpenCode can be used either as a power-user MCP client path or as a private server-side runtime behind `/agent`. In the backend-runtime path, the web app still does not expose OpenCode or MCP directly to browsers.
 
 ## Configuration
 
@@ -230,6 +232,7 @@ Suggested environment:
 
 ```env
 KOMMUNALPOLITIK_AGENT_ENABLED=true
+KOMMUNALPOLITIK_AGENT_RUNTIME=tool-loop
 KOMMUNALPOLITIK_LLM_PROVIDER=none
 KOMMUNALPOLITIK_LLM_MODEL=
 ANTHROPIC_API_KEY=

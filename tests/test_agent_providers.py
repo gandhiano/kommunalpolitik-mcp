@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.agent.core import AgentAction, AgentRequest, AgentSource
-from src.agent.providers import NoneProvider, _response_from_llm, build_agent_prompt, provider_from_env
+from src.agent.providers import NoneProvider, _json_object, _response_from_llm, build_agent_prompt, build_agent_step_prompt, provider_from_env
 
 
 def test_provider_from_env_defaults_to_none(monkeypatch) -> None:
@@ -84,6 +84,25 @@ def test_briefing_prompt_demands_structured_markdown() -> None:
     assert "## Kurzbriefing" in prompt
     assert "## Rueckfragen fuer die Sitzung" in prompt
     assert "## Unsicherheiten" in prompt
+
+
+def test_agent_step_prompt_exposes_tool_contract() -> None:
+    prompt = build_agent_step_prompt(
+        AgentRequest(task="Finde frühere Anträge der Grünen zum Thema Verkehr", mode="research"),
+        [],
+        [],
+        {"actions_taken": []},
+    )
+
+    assert '"tool":"search_text"' in prompt
+    assert '"final_answer"' in prompt
+    assert "nicht nur in der naechsten Sitzung" in prompt
+
+
+def test_json_object_extracts_fenced_payload() -> None:
+    payload = _json_object('```json\n{"tool":"search_text","arguments":{"query":"Haushalt"}}\n```')
+
+    assert payload == {"tool": "search_text", "arguments": {"query": "Haushalt"}}
 
 
 def test_empty_llm_answer_falls_back_to_retrieval_summary() -> None:
